@@ -1,0 +1,298 @@
+basePath: /
+definitions:
+  video_hosting.ItemMetadata:
+    properties:
+      description:
+        description: Short text describing the content of the item
+        type: string
+      title:
+        description: Title of the item
+        type: string
+      visibility:
+        description: Visibility of the item
+        type: string
+    required:
+    - description
+    - title
+    - visibility
+    type: object
+  video_hosting.Playlist:
+    properties:
+      createdAt:
+        description: Creation date
+        type: string
+      description:
+        description: Short description about what's in the playlist
+        type: string
+      id:
+        type: string
+      itemCount:
+        description: Number of video in this playlist
+        type: integer
+      thumbnailUrl:
+        description: Playlist thumbnail
+        type: string
+      title:
+        description: Playlist display name
+        type: string
+      visibility:
+        description: public/private/unlisted
+        type: string
+    type: object
+  video_hosting.Video:
+    properties:
+      createdAt:
+        description: Creation date
+        type: string
+      description:
+        description: Video description
+        type: string
+      duration:
+        description: Video duration in seconds
+        type: integer
+      id:
+        type: string
+      thumbnailUrl:
+        description: Playlist thumbnail
+        type: string
+      title:
+        description: Video display name
+        type: string
+      visibility:
+        description: public/private/unlisted
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a sample server celler server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Swagger Example API
+  version: "1.0"
+paths:
+  /playlists:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new playlist on the remote video hosting platform
+      parameters:
+      - description: Required data to create a playlist
+        in: body
+        name: meta
+        required: true
+        schema:
+          $ref: '#/definitions/video_hosting.ItemMetadata'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/video_hosting.Playlist'
+        "400":
+          description: Required metata are wrong in some ways
+        "500":
+          description: Internal Server Error
+      summary: Creates a new playlist
+      tags:
+      - playlists
+  /playlists/{id}:
+    delete:
+      description: Delete the playlist by ID if it exists
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+        "404":
+          description: No playlist with this ID
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+      summary: Delete a playlist
+      tags:
+      - videos
+    get:
+      description: Retrieve a playlist by ID
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/video_hosting.Playlist'
+        "400":
+          description: Bad Request
+        "404":
+          description: No playlist with this ID
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+      summary: Get a playlist
+      tags:
+      - playlists
+    put:
+      consumes:
+      - application/json
+      description: Update a playlist by ID if it exists
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/video_hosting.Playlist'
+        "400":
+          description: Bad Request
+        "404":
+          description: No playlist with this ID
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+      summary: Update a playlist
+      tags:
+      - playlists
+  /videos:
+    post:
+      consumes:
+      - application/json
+      description: Upload a video from the object storage to the video hosting platform
+      parameters:
+      - description: Video ID
+        in: path
+        name: key
+        required: true
+        type: integer
+      - description: Required data to upload a video
+        in: body
+        name: videometa
+        required: true
+        schema:
+          $ref: '#/definitions/video_hosting.ItemMetadata'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/video_hosting.Video'
+        "400":
+          description: Bad Request
+        "404":
+          description: No video with this ID
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+      summary: Upload a video
+      tags:
+      - videos
+  /videos/{id}:
+    delete:
+      description: Delete the video by ID if it exists
+      parameters:
+      - description: Video ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+        "404":
+          description: No video with this ID
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+      summary: Delete a video
+      tags:
+      - videos
+    get:
+      description: Retrieve a video by ID
+      parameters:
+      - description: Video ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/video_hosting.Video'
+        "400":
+          description: Bad Request
+        "404":
+          description: No video with this ID
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+      summary: Get a video
+      tags:
+      - videos
+    put:
+      consumes:
+      - application/json
+      description: Update the video by ID if it exists
+      parameters:
+      - description: Video ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/video_hosting.Video'
+        "400":
+          description: Bad Request
+        "404":
+          description: No video with this ID
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+      summary: Update a video
+      tags:
+      - videos
+swagger: "2.0"
