@@ -1,10 +1,10 @@
 apiVersion: dapr.io/v1alpha1
 kind: Subscription
 metadata:
-  name: encode
+  name: upload
 spec:
-  topic: encodings
-  route: /encode
+  topic: uploads
+  route: /v1/videos
   pubsubname: message-queue
 scopes:
-  - encode-box
+  - video-store
