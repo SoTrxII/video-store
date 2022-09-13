@@ -29,4 +29,4 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/video-hosting:${{ steps.define_env.outputs.tag }}
+          tags: ${{ secrets.DOCKER_USERNAME }}/video-store:${{ steps.define_env.outputs.tag }}
