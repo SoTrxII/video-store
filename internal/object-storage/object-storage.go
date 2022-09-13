@@ -41,7 +41,8 @@ func NewDaprObjectStorage(ctx *context.Context, daprClient *client.Client, compo
 // NewObjectStorage General purpose object storage
 func NewObjectStorage[T BindingProxy](ctx *context.Context, assetsPath string, client T) *ObjectStorage[T] {
 	return &ObjectStorage[T]{
-		assetsPath:    assetsPath,
+		assetsPath: assetsPath,
+		// TODO :: component configurable
 		componentName: "",
 		client:        &client,
 		ctx:           ctx,

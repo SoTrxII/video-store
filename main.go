@@ -33,18 +33,9 @@ var (
 	log = logger.Build()
 )
 
-// @title           Swagger Example API
+// @title           Video store
 // @version         1.0
-// @description     This is a sample server celler server.
-// @termsOfService  http://swagger.io/terms/
-
-// @contact.name   API Support
-// @contact.url    http://www.swagger.io/support
-// @contact.email  support@swagger.io
-
-// @license.name  Apache 2.0
-// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
-
+// @description     An API to store and retrieve videos from a remote hosting service
 // @host      localhost:8080
 // @BasePath  /
 
@@ -79,7 +70,7 @@ func main() {
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	router.Use(ErrorHandler)
-	err = router.Run(":8080")
+	err = router.Run(fmt.Sprintf(":%d", Port))
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
