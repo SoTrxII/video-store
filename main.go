@@ -26,7 +26,10 @@ const (
 	Port                = 8080
 	DefaultDaprGrpcPort = 500001
 	// env
-	DAPR_GRPC_PORT = "DAPR_GRPC_PORT"
+	DAPR_GRPC_PORT    = "DAPR_GRPC_PORT"
+	OBJECT_STORE_NAME = "OBJECT_STORE_NAME"
+	//PUBSUB_NAME           = "PUBSUB_NAME"
+	//PUBSUB_TOPIC_PROGRESS = "PUBSUB_TOPIC_PROGRESS"
 )
 
 var (
@@ -98,12 +101,14 @@ func resolveDI(ctx *context.Context) (videos_controller.VideoController[client.C
 	if err != nil {
 		log.Fatalf("Error during init : %s", err.Error())
 	}
-	// - With Dapr, create the object store client...
-	dir, err := os.MkdirTemp("", "obj-store")
+	storeName := ""
+	if storeName = os.Getenv(OBJECT_STORE_NAME); storeName == "" {
+		log.Fatalf("Error during init : No dapr store defined !")
+	}
+	objStore, err := object_storage.NewDaprObjectStorage(ctx, proxy, storeName)
 	if err != nil {
 		log.Fatalf("Error during init : %s", err.Error())
 	}
-	objStore := object_storage.NewObjectStorage[client.Client](ctx, dir, *proxy)
 	// With Dapr and the storage client, we can then resolve the video store service...
 	storeService, err := video_store_service.MakeVideoStoreService[client.Client](*ctx, video_store_service.Youtube, *objStore)
 	// With in turn give us the controllers
