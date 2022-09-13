@@ -34,7 +34,7 @@ var (
 		Id:           "testId",
 		Title:        "testTitle",
 		Description:  "testDescription",
-		CreatedAt:    time.Unix(1662202180, 0),
+		CreatedAt:    time.Unix(1662202180, 0).UTC(),
 		Duration:     0,
 		Visibility:   "unlisted",
 		ThumbnailUrl: "",
