@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/dapr/go-sdk/client"
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -12,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 	mock_object_storage "video-manager/internal/mock/object-storage"
@@ -274,13 +276,28 @@ func Test_VideoController_Create_Error_Key(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 
-	// Testing with an empty ID
-	c.Params = []gin.Param{gin.Param{Key: "key", Value: ""}}
+	// No storage key
+	body := CreateVideoBody{
+		ItemMetadata: video_hosting.ItemMetadata{
+			Description: "",
+			Title:       "",
+			Visibility:  "",
+		},
+	}
+	setJsonAsBody(t, c, body)
 	deps.controller.Create(c)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
-	// Testing with no ID
-	c.Params = []gin.Param{}
+	// Empty storage key
+	body = CreateVideoBody{
+		ItemMetadata: video_hosting.ItemMetadata{
+			Description: "",
+			Title:       "",
+			Visibility:  "",
+		},
+		StorageKey: "",
+	}
+	setJsonAsBody(t, c, body)
 	deps.controller.Create(c)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
@@ -290,9 +307,56 @@ func Test_VideoController_Create_Error_Payload_NoBody(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	// Testing with an empty body
-	c.Params = []gin.Param{gin.Param{Key: "key", Value: "1"}}
 	deps.controller.Create(c)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func Test_VideoController_Create_Error_TitleValidation(t *testing.T) {
+	deps := Setup(t)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	// Empty storage key
+	body := CreateVideoBody{
+		ItemMetadata: video_hosting.ItemMetadata{
+			Description: "blah",
+			Title:       strings.Repeat("test", 30),
+			Visibility:  "hh",
+		},
+		StorageKey: "ddd",
+	}
+	setJsonAsBody(t, c, body)
+	deps.controller.Create(c)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func Test_VideoController_Create_Ok(t *testing.T) {
+	deps := Setup(t)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	// Mocking call to the object storage
+	deps.
+		objectStoreProxy.
+		EXPECT().
+		InvokeBinding(gomock.Any(), gomock.Any()).Return(&client.BindingEvent{Data: []byte("aa")}, nil)
+	// Mocking call to video host
+	deps.
+		videoStore.
+		EXPECT().
+		CreateVideo(gomock.Any(), gomock.Any(), gomock.Any()).Return(&sampleVid, nil)
+
+	body := CreateVideoBody{
+		ItemMetadata: video_hosting.ItemMetadata{
+			Description: "test",
+			Title:       "test",
+			Visibility:  "test",
+		},
+		StorageKey: "test",
+	}
+	setJsonAsBody(t, c, body)
+	// Testing with an empty body
+	deps.controller.Create(c)
+	assert.Equal(t, http.StatusOK, w.Code)
 }
 
 // Set the payload as the JSON body of c

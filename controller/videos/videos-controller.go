@@ -12,32 +12,43 @@ type VideoController[B object_storage.BindingProxy] struct {
 	Service *video_store_service.VideoStoreService[B]
 }
 
+// POST body required to create a new video on the hosting platform
+// from the backend object storage
+type CreateVideoBody struct {
+	// Required metadata to upload a video
+	video_hosting.ItemMetadata
+	// Key to retrieve the video from the object storage
+	StorageKey string `json:"storageKey" binding:"required"`
+}
+
 // ShowAccount godoc
 // @Summary      Upload a video
 // @Description  Upload a video from the object storage to the video hosting platform
 // @Tags         videos
 // @Accept       json
 // @Produce      json
-// @Param        key   path      int  true  "Video ID"
-// @Param 		 videometa body video_hosting.ItemMetadata true "Required data to upload a video"
+// @Param 		 videometa body CreateVideoBody true "Required data to upload a video"
 // @Success      200  {object}  video_hosting.Video
 // @Failure      400
 // @Failure      404  {string}  string "No video with this ID"
 // @Failure      500
 // @Router       /videos [post]
 func (vc *VideoController[S]) Create(c *gin.Context) {
-	key := c.Param("key")
-	if key == "" {
-		c.String(http.StatusBadRequest, `No key provided !`)
-		return
-	}
-	var target video_hosting.ItemMetadata
+	var target CreateVideoBody
 	if err := c.BindJSON(&target); err != nil {
 		c.String(http.StatusBadRequest, `invalid body provided: %s !`, err.Error())
 		return
 	}
+	if target.StorageKey == "" {
+		c.String(http.StatusBadRequest, `No storage key provided, aborting !`)
+		return
+	}
 	// TODO : Progress
-	vid, err := vc.Service.UploadVideoFromStorage(key, &target)
+	vid, err := vc.Service.UploadVideoFromStorage(target.StorageKey, &video_hosting.ItemMetadata{
+		Description: target.Description,
+		Title:       target.Title,
+		Visibility:  target.Visibility,
+	})
 	if err != nil {
 		if re, ok := err.(*video_hosting.RequestError); ok {
 			c.String(re.StatusCode, re.Error())
