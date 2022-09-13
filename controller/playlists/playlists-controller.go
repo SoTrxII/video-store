@@ -29,7 +29,6 @@ func (vc *PlaylistController[S]) Create(c *gin.Context) {
 		c.String(http.StatusBadRequest, `invalid body provided: %s !`, err.Error())
 		return
 	}
-	// TODO : Progress
 	vid, err := vc.Service.VidHost.CreatePlaylist(&target)
 	if err != nil {
 		if re, ok := err.(*video_hosting.RequestError); ok {
