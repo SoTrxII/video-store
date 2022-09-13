@@ -94,11 +94,16 @@ const (
 // All metadata about the item to update
 type ItemMetadata struct {
 	// Short text describing the content of the item
-	Description string `binding:"required, max=250"`
+	// Youtube actually limits to 5000 bytes, which *isn't* 5000 characters
+	// https://developers.google.com/youtube/v3/docs/videos#properties
+	Description string `json:"description" binding:"max=1000"`
 	// Title of the item
-	Title string `binding:"required, max=70"`
+	// The max character limitation is currently taken from the Yt docs
+	// https://developers.google.com/youtube/v3/docs/videos#properties
+	// This may change if another provider is requiring less than 100 characters
+	Title string `json:"title" binding:"required,max=100"`
 	// Visibility of the item
-	Visibility Visibility `binding:"required"`
+	Visibility Visibility `json:"visibility" binding:"required"`
 }
 
 // This error is only thrown when an error
