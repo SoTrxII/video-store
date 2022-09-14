@@ -53,6 +53,7 @@ func (vc *VideoController[S]) Create(c *gin.Context) {
 		if re, ok := err.(*video_hosting.RequestError); ok {
 			c.String(re.StatusCode, re.Error())
 		} else {
+			c.Status(http.StatusInternalServerError)
 			_ = c.Error(err)
 		}
 		return
@@ -82,6 +83,7 @@ func (vc *VideoController[S]) Retrieve(c *gin.Context) {
 		if re, ok := err.(*video_hosting.RequestError); ok {
 			c.String(re.StatusCode, re.Error())
 		} else {
+			c.Status(http.StatusInternalServerError)
 			_ = c.Error(err)
 		}
 		return
@@ -118,6 +120,7 @@ func (vc *VideoController[S]) Update(c *gin.Context) {
 		if re, ok := err.(*video_hosting.RequestError); ok {
 			c.String(re.StatusCode, re.Error())
 		} else {
+			c.Status(http.StatusInternalServerError)
 			_ = c.Error(err)
 		}
 		return
@@ -147,6 +150,7 @@ func (vc *VideoController[S]) Delete(c *gin.Context) {
 		if re, ok := err.(*video_hosting.RequestError); ok {
 			c.String(re.StatusCode, re.Error())
 		} else {
+			c.Status(http.StatusInternalServerError)
 			_ = c.Error(err)
 		}
 		return
@@ -175,6 +179,7 @@ func (vc *VideoController[S]) SetThumbnail(c *gin.Context) {
 		if re, ok := err.(*video_hosting.RequestError); ok {
 			c.String(re.StatusCode, re.Error())
 		} else {
+			c.Status(http.StatusInternalServerError)
 			_ = c.Error(err)
 		}
 		return

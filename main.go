@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/dapr/go-sdk/client"
@@ -11,9 +12,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"net"
-	"net/http"
 	"os"
 	"strconv"
+	"time"
 	playlists_controller "video-manager/controller/playlists"
 	videos_controller "video-manager/controller/videos"
 	_ "video-manager/docs"
@@ -28,6 +29,7 @@ const (
 	// env
 	DAPR_GRPC_PORT    = "DAPR_GRPC_PORT"
 	OBJECT_STORE_NAME = "OBJECT_STORE_NAME"
+	GIN_MODE          = "GIN_MODE"
 	//PUBSUB_NAME           = "PUBSUB_NAME"
 	//PUBSUB_TOPIC_PROGRESS = "PUBSUB_TOPIC_PROGRESS"
 )
@@ -47,10 +49,37 @@ func main() {
 	if err != nil {
 		log.Info("No .env file loaded !")
 	}
+	// Env is loaded after gin is initialized, we must set it manually
+	if os.Getenv(GIN_MODE) == "release" {
+		gin.SetMode(gin.ReleaseMode)
+	}
 	ctx := context.Background()
 	vidCtrl, playlistCtrl := resolveDI(&ctx)
 	router := gin.Default()
 
+	router.Use(func() gin.HandlerFunc {
+		// Change default logger to an ecs compliant one
+		// We use a closure to only build one logger instance
+		bufferLogger := logger.Build()
+		buf := new(bytes.Buffer)
+		bufferLogger.Out = buf
+		return gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+			bufferLogger.Infof(`%s - [%s] "%s %s %s %d %s "%s" %s"`,
+				param.ClientIP,
+				param.TimeStamp.Format(time.RFC1123),
+				param.Method,
+				param.Path,
+				param.Request.Proto,
+				param.StatusCode,
+				param.Latency,
+				param.Request.UserAgent(),
+				param.ErrorMessage,
+			)
+			return buf.String()
+		})
+	}())
+
+	// Define all routes
 	v1 := router.Group("/v1")
 	{
 		videos := v1.Group("/videos")
@@ -72,24 +101,11 @@ func main() {
 	}
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
-	router.Use(ErrorHandler)
+
 	err = router.Run(fmt.Sprintf(":%d", Port))
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-
-}
-
-// Global Error handler
-func ErrorHandler(c *gin.Context) {
-	c.Next()
-
-	log.Warnf("Some error occured during processing : ")
-	for _, err := range c.Errors {
-		log.Warnf(err.Error())
-	}
-
-	c.JSON(http.StatusInternalServerError, "")
 }
 
 // Resolve the pseudo DI-container

@@ -34,6 +34,7 @@ func (vc *PlaylistController[S]) Create(c *gin.Context) {
 		if re, ok := err.(*video_hosting.RequestError); ok {
 			c.String(re.StatusCode, re.Error())
 		} else {
+			c.Status(http.StatusInternalServerError)
 			_ = c.Error(err)
 		}
 		return
@@ -63,6 +64,7 @@ func (vc *PlaylistController[S]) Retrieve(c *gin.Context) {
 		if re, ok := err.(*video_hosting.RequestError); ok {
 			c.String(re.StatusCode, re.Error())
 		} else {
+			c.Status(http.StatusInternalServerError)
 			_ = c.Error(err)
 		}
 		return
@@ -99,6 +101,7 @@ func (vc *PlaylistController[S]) Update(c *gin.Context) {
 		if re, ok := err.(*video_hosting.RequestError); ok {
 			c.String(re.StatusCode, re.Error())
 		} else {
+			c.Status(http.StatusInternalServerError)
 			_ = c.Error(err)
 		}
 		return
@@ -128,6 +131,7 @@ func (vc *PlaylistController[S]) Delete(c *gin.Context) {
 		if re, ok := err.(*video_hosting.RequestError); ok {
 			c.String(re.StatusCode, re.Error())
 		} else {
+			c.Status(http.StatusInternalServerError)
 			_ = c.Error(err)
 		}
 		return
@@ -163,6 +167,7 @@ func (vc *PlaylistController[S]) AddVideo(c *gin.Context) {
 		if re, ok := err.(*video_hosting.RequestError); ok {
 			c.String(re.StatusCode, re.Error())
 		} else {
+			c.Status(http.StatusInternalServerError)
 			_ = c.Error(err)
 		}
 		return
