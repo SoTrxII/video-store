@@ -2,12 +2,12 @@
 
 ![CI](https://github.com/SoTrxII/video-store/actions/workflows/publish-coverage.yml/badge.svg)
 [![codecov](https://codecov.io/gh/SoTrxII/video-store/branch/master/graph/badge.svg?token=LWUYAQGLR4)](https://codecov.io/gh/SoTrxII/video-store)
-[![Docker Image Size](https://badgen.net/docker/size/sotrx/video-store/0.3.1?label=video-store&icon=docker)](https://hub.docker.com/r/sotrx/video-store/)
+[![Docker Image Size](https://badgen.net/docker/size/sotrx/video-store/0.3.1?label=video-store)](https://hub.docker.com/r/sotrx/video-store/)
 
-An API for storing/retrieving videos from "any generic" video storage platform.
+An Goland-based API for storing/retrieving videos from "any generic" video storage platform.
 
 Although the only targeted platform is Youtube for the time being, the point of the generic approach
-is to be able to change easily if needed be.
+is to be able to change the video-provider easily and without breaking the general workflow.
 
 The full API documentation is available [here](https://sotrxii.github.io/video-store/) 
 
