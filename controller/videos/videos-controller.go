@@ -44,7 +44,6 @@ func (vc *VideoController[S, P]) Create(c *gin.Context) {
 		c.String(http.StatusBadRequest, `No storage key provided, aborting !`)
 		return
 	}
-	// TODO : Progress
 	vid, err := vc.Service.UploadVideoFromStorage(target.StorageKey, &video_hosting.ItemMetadata{
 		Description: target.Description,
 		Title:       target.Title,

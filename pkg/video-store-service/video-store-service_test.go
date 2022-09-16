@@ -122,6 +122,9 @@ func TestVideoStoreService_UploadFromObjectStore_InvalidMetadata(t *testing.T) {
 
 func TestVideoStoreService_UploadFromObjectStore_WithProgress(t *testing.T) {
 	deps := Setup(t, true)
+	deps.brokerProxy.
+		EXPECT().
+		PublishEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 	deps.objectStoreProxy.EXPECT().InvokeBinding(gomock.Any(), gomock.Any()).Return(&client.BindingEvent{Data: []byte("a")}, nil)
 	deps.videoStore.EXPECT().CreateVideo(gomock.Any(), gomock.Any(), gomock.Any()).Return(&video_hosting.Video{
 		Id:           "test",
