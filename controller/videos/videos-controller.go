@@ -164,7 +164,6 @@ func (vc *VideoController[S, P]) Delete(c *gin.Context) {
 // @Tags         videos
 // @Accept       octet-stream
 // @Param        key   path      int  true  "Video ID"
-// @Param 		 thumb body octet-stream true "Thumbnail content"
 // @Success      204
 // @Failure      500
 // @Router       /videos/{id}/thumbnail [post]

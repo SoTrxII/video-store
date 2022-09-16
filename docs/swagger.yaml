@@ -3,16 +3,24 @@ definitions:
   video_hosting.ItemMetadata:
     properties:
       description:
-        description: Short text describing the content of the item
+        description: |-
+          Short text describing the content of the item
+          Youtube actually limits to 5000 bytes, which *isn't* 5000 characters
+          https://developers.google.com/youtube/v3/docs/videos#properties
+        maxLength: 1000
         type: string
       title:
-        description: Title of the item
+        description: |-
+          Title of the item
+          The max character limitation is currently taken from the Yt docs
+          https://developers.google.com/youtube/v3/docs/videos#properties
+          This may change if another provider is requiring less than 100 characters
+        maxLength: 100
         type: string
       visibility:
         description: Visibility of the item
         type: string
     required:
-    - description
     - title
     - visibility
     type: object
@@ -62,18 +70,39 @@ definitions:
         description: public/private/unlisted
         type: string
     type: object
+  videos_controller.CreateVideoBody:
+    properties:
+      description:
+        description: |-
+          Short text describing the content of the item
+          Youtube actually limits to 5000 bytes, which *isn't* 5000 characters
+          https://developers.google.com/youtube/v3/docs/videos#properties
+        maxLength: 1000
+        type: string
+      storageKey:
+        description: Key to retrieve the video from the object storage
+        type: string
+      title:
+        description: |-
+          Title of the item
+          The max character limitation is currently taken from the Yt docs
+          https://developers.google.com/youtube/v3/docs/videos#properties
+          This may change if another provider is requiring less than 100 characters
+        maxLength: 100
+        type: string
+      visibility:
+        description: Visibility of the item
+        type: string
+    required:
+    - storageKey
+    - title
+    - visibility
+    type: object
 host: localhost:8080
 info:
-  contact:
-    email: support@swagger.io
-    name: API Support
-    url: http://www.swagger.io/support
-  description: This is a sample server celler server.
-  license:
-    name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
-  termsOfService: http://swagger.io/terms/
-  title: Swagger Example API
+  contact: {}
+  description: An API to store and retrieve videos from a remote hosting service
+  title: Video store
   version: "1.0"
 paths:
   /playlists:
@@ -126,7 +155,7 @@ paths:
           description: Internal Server Error
       summary: Delete a playlist
       tags:
-      - videos
+      - playlists
     get:
       description: Retrieve a playlist by ID
       parameters:
@@ -163,6 +192,12 @@ paths:
         name: id
         required: true
         type: integer
+      - description: Updated playlist
+        in: body
+        name: playlist
+        required: true
+        schema:
+          $ref: '#/definitions/video_hosting.Playlist'
       produces:
       - application/json
       responses:
@@ -181,23 +216,48 @@ paths:
       summary: Update a playlist
       tags:
       - playlists
+  /playlists/{pid}/videos/{vid}:
+    put:
+      description: Add an existing playlist to an existing video
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: pid
+        required: true
+        type: integer
+      - description: Video ID
+        in: path
+        name: vid
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+        "404":
+          description: Either the playlist or video don't exists
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+      summary: Add a video to the selected playlist
+      tags:
+      - playlists
   /videos:
     post:
       consumes:
       - application/json
       description: Upload a video from the object storage to the video hosting platform
       parameters:
-      - description: Video ID
-        in: path
-        name: key
-        required: true
-        type: integer
       - description: Required data to upload a video
         in: body
         name: videometa
         required: true
         schema:
-          $ref: '#/definitions/video_hosting.ItemMetadata'
+          $ref: '#/definitions/videos_controller.CreateVideoBody'
       produces:
       - application/json
       responses:
@@ -277,6 +337,12 @@ paths:
         name: id
         required: true
         type: integer
+      - description: Updated video
+        in: body
+        name: video
+        required: true
+        schema:
+          $ref: '#/definitions/video_hosting.Video'
       produces:
       - application/json
       responses:
@@ -293,6 +359,32 @@ paths:
         "500":
           description: Internal Server Error
       summary: Update a video
+      tags:
+      - videos
+  /videos/{id}/thumbnail:
+    post:
+      consumes:
+      - application/octet-stream
+      description: Set the thumbnail of an existing video on the remote video hosting
+        platform
+      parameters:
+      - description: Video ID
+        in: path
+        name: key
+        required: true
+        type: integer
+      - description: Thumbnail content
+        in: body
+        name: thumb
+        required: true
+        schema:
+          type: integer
+      responses:
+        "204":
+          description: No Content
+        "500":
+          description: Internal Server Error
+      summary: Set the thumbnail of a video
       tags:
       - videos
 swagger: "2.0"

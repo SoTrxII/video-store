@@ -10,16 +10,7 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "termsOfService": "http://swagger.io/terms/",
-        "contact": {
-            "name": "API Support",
-            "url": "http://www.swagger.io/support",
-            "email": "support@swagger.io"
-        },
-        "license": {
-            "name": "Apache 2.0",
-            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
-        },
+        "contact": {},
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -124,6 +115,15 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Updated playlist",
+                        "name": "playlist",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/video_hosting.Playlist"
+                        }
                     }
                 ],
                 "responses": {
@@ -153,7 +153,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "videos"
+                    "playlists"
                 ],
                 "summary": "Delete a playlist",
                 "parameters": [
@@ -184,6 +184,51 @@ const docTemplate = `{
                 }
             }
         },
+        "/playlists/{pid}/videos/{vid}": {
+            "put": {
+                "description": "Add an existing playlist to an existing video",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "playlists"
+                ],
+                "summary": "Add a video to the selected playlist",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Playlist ID",
+                        "name": "pid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Video ID",
+                        "name": "vid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Either the playlist or video don't exists",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
         "/videos": {
             "post": {
                 "description": "Upload a video from the object storage to the video hosting platform",
@@ -199,19 +244,12 @@ const docTemplate = `{
                 "summary": "Upload a video",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "Video ID",
-                        "name": "key",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
                         "description": "Required data to upload a video",
                         "name": "videometa",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/video_hosting.ItemMetadata"
+                            "$ref": "#/definitions/videos_controller.CreateVideoBody"
                         }
                     }
                 ],
@@ -296,6 +334,15 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Updated video",
+                        "name": "video",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/video_hosting.Video"
+                        }
                     }
                 ],
                 "responses": {
@@ -355,24 +402,63 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/videos/{id}/thumbnail": {
+            "post": {
+                "description": "Set the thumbnail of an existing video on the remote video hosting platform",
+                "consumes": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "videos"
+                ],
+                "summary": "Set the thumbnail of a video",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Video ID",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Thumbnail content",
+                        "name": "thumb",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
         }
     },
     "definitions": {
         "video_hosting.ItemMetadata": {
             "type": "object",
             "required": [
-                "description",
                 "title",
                 "visibility"
             ],
             "properties": {
                 "description": {
-                    "description": "Short text describing the content of the item",
-                    "type": "string"
+                    "description": "Short text describing the content of the item\nYoutube actually limits to 5000 bytes, which *isn't* 5000 characters\nhttps://developers.google.com/youtube/v3/docs/videos#properties",
+                    "type": "string",
+                    "maxLength": 1000
                 },
                 "title": {
-                    "description": "Title of the item",
-                    "type": "string"
+                    "description": "Title of the item\nThe max character limitation is currently taken from the Yt docs\nhttps://developers.google.com/youtube/v3/docs/videos#properties\nThis may change if another provider is requiring less than 100 characters",
+                    "type": "string",
+                    "maxLength": 100
                 },
                 "visibility": {
                     "description": "Visibility of the item",
@@ -443,6 +529,34 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "videos_controller.CreateVideoBody": {
+            "type": "object",
+            "required": [
+                "storageKey",
+                "title",
+                "visibility"
+            ],
+            "properties": {
+                "description": {
+                    "description": "Short text describing the content of the item\nYoutube actually limits to 5000 bytes, which *isn't* 5000 characters\nhttps://developers.google.com/youtube/v3/docs/videos#properties",
+                    "type": "string",
+                    "maxLength": 1000
+                },
+                "storageKey": {
+                    "description": "Key to retrieve the video from the object storage",
+                    "type": "string"
+                },
+                "title": {
+                    "description": "Title of the item\nThe max character limitation is currently taken from the Yt docs\nhttps://developers.google.com/youtube/v3/docs/videos#properties\nThis may change if another provider is requiring less than 100 characters",
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "visibility": {
+                    "description": "Visibility of the item",
+                    "type": "string"
+                }
+            }
         }
     }
 }`
@@ -453,8 +567,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "localhost:8080",
 	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "Swagger Example API",
-	Description:      "This is a sample server celler server.",
+	Title:            "Video store",
+	Description:      "An API to store and retrieve videos from a remote hosting service",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 }
