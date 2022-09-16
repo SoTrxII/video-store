@@ -20,6 +20,7 @@ import (
 	mock_progress_broker "video-manager/internal/mock/progress-broker"
 	mock_video_hosting "video-manager/internal/mock/video-hosting"
 	object_storage "video-manager/internal/object-storage"
+	progress_broker "video-manager/internal/progress-broker"
 	video_hosting "video-manager/internal/video-hosting"
 	video_store_service "video-manager/pkg/video-store-service"
 )
@@ -27,6 +28,7 @@ import (
 type mocked struct {
 	videoStore       *mock_video_hosting.MockIVideoHost
 	objectStoreProxy *mock_object_storage.MockBindingProxy
+	brokerProxy      *mock_progress_broker.MockPubSubProxy
 	controller       *VideoController[*mock_object_storage.MockBindingProxy, *mock_progress_broker.MockPubSubProxy]
 }
 
@@ -47,32 +49,53 @@ var (
 	}
 )
 
-func Setup(t *testing.T) *mocked {
+func Setup(t *testing.T, initBroker bool) *mocked {
 	ctx := context.Background()
 	dir, err := os.MkdirTemp("", "assets")
 	if err != nil {
 		t.Fatal(err)
 	}
-	objStoreCtrl := gomock.NewController(t)
-	proxy := mock_object_storage.NewMockBindingProxy(objStoreCtrl)
-	objectStore := object_storage.NewObjectStorage[*mock_object_storage.MockBindingProxy](&ctx, dir, proxy)
+	ctrl := gomock.NewController(t)
+	// Initialize object storage
+	objStoreProxy := mock_object_storage.NewMockBindingProxy(ctrl)
+	objectStore := object_storage.NewObjectStorage[*mock_object_storage.MockBindingProxy](&ctx, dir, objStoreProxy)
+
+	// Initialize video host
 	vidCtrl := gomock.NewController(t)
 	vidHost := mock_video_hosting.NewMockIVideoHost(vidCtrl)
+
+	//  Initialize event broker
+	psProxy := mock_progress_broker.NewMockPubSubProxy(ctrl)
+	broker, err := progress_broker.NewProgressBroker[*mock_progress_broker.MockPubSubProxy](&ctx, &psProxy, progress_broker.NewBrokerOptions{
+		Component: "",
+		Topic:     "",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	vss := video_store_service.VideoStoreService[*mock_object_storage.MockBindingProxy, *mock_progress_broker.MockPubSubProxy]{
 		ObjStore: objectStore,
 		VidHost:  vidHost,
+	}
+	// The broker can either be included in the controller or set to nil
+	// in which case no progress event will be sent
+	if initBroker {
+		vss.EvtBroker = broker
 	}
 	controller := VideoController[*mock_object_storage.MockBindingProxy, *mock_progress_broker.MockPubSubProxy]{Service: &vss}
 	gin.SetMode(gin.TestMode)
 	return &mocked{
 		videoStore:       vidHost,
-		objectStoreProxy: proxy,
+		objectStoreProxy: objStoreProxy,
+		brokerProxy:      psProxy,
 		controller:       &controller,
 	}
+
 }
 
 func Test_VideoController_Delete_Error_Id(t *testing.T) {
-	deps := Setup(t)
+	deps := Setup(t, false)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 
@@ -88,7 +111,7 @@ func Test_VideoController_Delete_Error_Id(t *testing.T) {
 }
 
 func Test_VideoController_Delete_Error_Deletion(t *testing.T) {
-	deps := Setup(t)
+	deps := Setup(t, false)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Params = []gin.Param{gin.Param{Key: "id", Value: "1"}}
@@ -100,7 +123,7 @@ func Test_VideoController_Delete_Error_Deletion(t *testing.T) {
 }
 
 func Test_VideoController_Delete_Error_NotFound(t *testing.T) {
-	deps := Setup(t)
+	deps := Setup(t, false)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Params = []gin.Param{gin.Param{Key: "id", Value: "1"}}
@@ -116,7 +139,7 @@ func Test_VideoController_Delete_Error_NotFound(t *testing.T) {
 }
 
 func Test_VideoController_Delete_Ok(t *testing.T) {
-	deps := Setup(t)
+	deps := Setup(t, false)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Params = []gin.Param{gin.Param{Key: "id", Value: "1"}}
@@ -128,7 +151,7 @@ func Test_VideoController_Delete_Ok(t *testing.T) {
 }
 
 func Test_VideoController_Update_Error_Id(t *testing.T) {
-	deps := Setup(t)
+	deps := Setup(t, false)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 
@@ -144,7 +167,7 @@ func Test_VideoController_Update_Error_Id(t *testing.T) {
 }
 
 func Test_VideoController_Update_Error_Payload_NoBody(t *testing.T) {
-	deps := Setup(t)
+	deps := Setup(t, false)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	// Testing with an empty ID
@@ -154,7 +177,7 @@ func Test_VideoController_Update_Error_Payload_NoBody(t *testing.T) {
 }
 
 func Test_VideoController_Update_Error_NotFound(t *testing.T) {
-	deps := Setup(t)
+	deps := Setup(t, false)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	setJsonAsBody(t, c, sampleVid)
@@ -170,7 +193,7 @@ func Test_VideoController_Update_Error_NotFound(t *testing.T) {
 }
 
 func Test_VideoController_Update_Error_Other(t *testing.T) {
-	deps := Setup(t)
+	deps := Setup(t, false)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	setJsonAsBody(t, c, sampleVid)
@@ -182,7 +205,7 @@ func Test_VideoController_Update_Error_Other(t *testing.T) {
 }
 
 func Test_VideoController_Update_Ok(t *testing.T) {
-	deps := Setup(t)
+	deps := Setup(t, false)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	setJsonAsBody(t, c, sampleVid)
@@ -206,7 +229,7 @@ func Test_VideoController_Update_Ok(t *testing.T) {
 }
 
 func Test_VideoController_Retrieve_Error_Id(t *testing.T) {
-	deps := Setup(t)
+	deps := Setup(t, false)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 
@@ -222,7 +245,7 @@ func Test_VideoController_Retrieve_Error_Id(t *testing.T) {
 }
 
 func Test_VideoController_Retrieve_Error_NotFound(t *testing.T) {
-	deps := Setup(t)
+	deps := Setup(t, false)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	setJsonAsBody(t, c, sampleVid)
@@ -237,7 +260,7 @@ func Test_VideoController_Retrieve_Error_NotFound(t *testing.T) {
 }
 
 func Test_VideoController_Retrieve_Error_Other(t *testing.T) {
-	deps := Setup(t)
+	deps := Setup(t, false)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	setJsonAsBody(t, c, sampleVid)
@@ -249,7 +272,7 @@ func Test_VideoController_Retrieve_Error_Other(t *testing.T) {
 }
 
 func Test_VideoController_Retrieve_Ok(t *testing.T) {
-	deps := Setup(t)
+	deps := Setup(t, false)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	setJsonAsBody(t, c, sampleVid)
@@ -273,7 +296,7 @@ func Test_VideoController_Retrieve_Ok(t *testing.T) {
 }
 
 func Test_VideoController_Create_Error_Key(t *testing.T) {
-	deps := Setup(t)
+	deps := Setup(t, false)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 
@@ -304,7 +327,7 @@ func Test_VideoController_Create_Error_Key(t *testing.T) {
 }
 
 func Test_VideoController_Create_Error_Payload_NoBody(t *testing.T) {
-	deps := Setup(t)
+	deps := Setup(t, false)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	// Testing with an empty body
@@ -313,7 +336,7 @@ func Test_VideoController_Create_Error_Payload_NoBody(t *testing.T) {
 }
 
 func Test_VideoController_Create_Error_TitleValidation(t *testing.T) {
-	deps := Setup(t)
+	deps := Setup(t, false)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 
@@ -332,9 +355,42 @@ func Test_VideoController_Create_Error_TitleValidation(t *testing.T) {
 }
 
 func Test_VideoController_Create_Ok(t *testing.T) {
-	deps := Setup(t)
+	deps := Setup(t, false)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
+	// Mocking call to the object storage
+	deps.
+		objectStoreProxy.
+		EXPECT().
+		InvokeBinding(gomock.Any(), gomock.Any()).Return(&client.BindingEvent{Data: []byte("aa")}, nil)
+	// Mocking call to video host
+	deps.
+		videoStore.
+		EXPECT().
+		CreateVideo(gomock.Any(), gomock.Any(), gomock.Any()).Return(&sampleVid, nil)
+
+	body := CreateVideoBody{
+		ItemMetadata: video_hosting.ItemMetadata{
+			Description: "test",
+			Title:       "test",
+			Visibility:  "test",
+		},
+		StorageKey: "test",
+	}
+	setJsonAsBody(t, c, body)
+	// Testing with an empty body
+	deps.controller.Create(c)
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func Test_VideoController_Create_Ok_WithProgress(t *testing.T) {
+	deps := Setup(t, true)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	// Mocking any call to the broker
+	deps.brokerProxy.
+		EXPECT().
+		PublishEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 	// Mocking call to the object storage
 	deps.
 		objectStoreProxy.
