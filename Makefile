@@ -24,5 +24,6 @@ test:
 # https://github.com/golang/mock
 mockgen:
 	mockgen -source ./internal/object-storage/object-storage.go -destination ./internal/mock/object-storage/object-storage.go
+	mockgen -source ./internal/progress-broker/progress-broker.go -destination ./internal/mock/progress-broker/progress-broker.go
 	mockgen -source ./internal/video-hosting/video-host.go -destination ./internal/mock/video-hosting/video-host.go
 	mockgen github.com/dapr/go-sdk/client Client  > ./internal/mock/dapr/dapr-client.go

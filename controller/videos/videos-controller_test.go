@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 	mock_object_storage "video-manager/internal/mock/object-storage"
+	mock_progress_broker "video-manager/internal/mock/progress-broker"
 	mock_video_hosting "video-manager/internal/mock/video-hosting"
 	object_storage "video-manager/internal/object-storage"
 	video_hosting "video-manager/internal/video-hosting"
@@ -26,7 +27,7 @@ import (
 type mocked struct {
 	videoStore       *mock_video_hosting.MockIVideoHost
 	objectStoreProxy *mock_object_storage.MockBindingProxy
-	controller       *VideoController[*mock_object_storage.MockBindingProxy]
+	controller       *VideoController[*mock_object_storage.MockBindingProxy, *mock_progress_broker.MockPubSubProxy]
 }
 
 var (
@@ -57,11 +58,11 @@ func Setup(t *testing.T) *mocked {
 	objectStore := object_storage.NewObjectStorage[*mock_object_storage.MockBindingProxy](&ctx, dir, proxy)
 	vidCtrl := gomock.NewController(t)
 	vidHost := mock_video_hosting.NewMockIVideoHost(vidCtrl)
-	vss := video_store_service.VideoStoreService[*mock_object_storage.MockBindingProxy]{
+	vss := video_store_service.VideoStoreService[*mock_object_storage.MockBindingProxy, *mock_progress_broker.MockPubSubProxy]{
 		ObjStore: objectStore,
 		VidHost:  vidHost,
 	}
-	controller := VideoController[*mock_object_storage.MockBindingProxy]{Service: &vss}
+	controller := VideoController[*mock_object_storage.MockBindingProxy, *mock_progress_broker.MockPubSubProxy]{Service: &vss}
 	gin.SetMode(gin.TestMode)
 	return &mocked{
 		videoStore:       vidHost,

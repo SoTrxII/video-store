@@ -4,12 +4,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	object_storage "video-manager/internal/object-storage"
+	progress_broker "video-manager/internal/progress-broker"
 	video_hosting "video-manager/internal/video-hosting"
 	video_store_service "video-manager/pkg/video-store-service"
 )
 
-type VideoController[B object_storage.BindingProxy] struct {
-	Service *video_store_service.VideoStoreService[B]
+type VideoController[B object_storage.BindingProxy, P progress_broker.PubSubProxy] struct {
+	Service *video_store_service.VideoStoreService[B, P]
 }
 
 // POST body required to create a new video on the hosting platform
@@ -33,7 +34,7 @@ type CreateVideoBody struct {
 // @Failure      404  {string}  string "No video with this ID"
 // @Failure      500
 // @Router       /videos [post]
-func (vc *VideoController[S]) Create(c *gin.Context) {
+func (vc *VideoController[S, P]) Create(c *gin.Context) {
 	var target CreateVideoBody
 	if err := c.BindJSON(&target); err != nil {
 		c.String(http.StatusBadRequest, `invalid body provided: %s !`, err.Error())
@@ -72,7 +73,7 @@ func (vc *VideoController[S]) Create(c *gin.Context) {
 // @Failure      404  {string}  string "No video with this ID"
 // @Failure      500
 // @Router       /videos/{id} [get]
-func (vc *VideoController[S]) Retrieve(c *gin.Context) {
+func (vc *VideoController[S, P]) Retrieve(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
 		c.String(http.StatusBadRequest, `No id provided !`)
@@ -104,7 +105,7 @@ func (vc *VideoController[S]) Retrieve(c *gin.Context) {
 // @Failure      404  {string}  string "No video with this ID"
 // @Failure      500
 // @Router       /videos/{id} [put]
-func (vc *VideoController[S]) Update(c *gin.Context) {
+func (vc *VideoController[S, P]) Update(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
 		c.String(http.StatusBadRequest, `No id provided !`)
@@ -139,7 +140,7 @@ func (vc *VideoController[S]) Update(c *gin.Context) {
 // @Failure      404  {string}  string "No video with this ID"
 // @Failure      500
 // @Router       /videos/{id} [delete]
-func (vc *VideoController[S]) Delete(c *gin.Context) {
+func (vc *VideoController[S, P]) Delete(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
 		c.String(http.StatusBadRequest, `No id provided !`)
@@ -168,7 +169,7 @@ func (vc *VideoController[S]) Delete(c *gin.Context) {
 // @Success      204
 // @Failure      500
 // @Router       /videos/{id}/thumbnail [post]
-func (vc *VideoController[S]) SetThumbnail(c *gin.Context) {
+func (vc *VideoController[S, P]) SetThumbnail(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
 		c.String(http.StatusBadRequest, `No id provided !`)

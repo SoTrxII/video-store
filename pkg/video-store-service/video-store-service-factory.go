@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	object_storage "video-manager/internal/object-storage"
+	progress_broker "video-manager/internal/progress-broker"
 	video_hosting "video-manager/internal/video-hosting"
 )
 
@@ -16,7 +17,7 @@ const (
 )
 
 // Return an instance of a video storage servcie configured with the provided video host as the backend
-func MakeVideoStoreService[T object_storage.BindingProxy](ctx context.Context, host Host, proxy object_storage.ObjectStorage[T]) (*VideoStoreService[T], error) {
+func MakeVideoStoreService[T object_storage.BindingProxy, P progress_broker.PubSubProxy](ctx context.Context, host Host, proxy object_storage.ObjectStorage[T], progressBroker *progress_broker.ProgressBroker[P]) (*VideoStoreService[T, P], error) {
 	var store video_hosting.IVideoHost
 	var err error
 	switch host {
@@ -30,9 +31,10 @@ func MakeVideoStoreService[T object_storage.BindingProxy](ctx context.Context, h
 		return nil, err
 	}
 
-	return &VideoStoreService[T]{
-		ObjStore: &proxy,
-		VidHost:  store,
+	return &VideoStoreService[T, P]{
+		EvtBroker: progressBroker,
+		ObjStore:  &proxy,
+		VidHost:   store,
 	}, nil
 
 }

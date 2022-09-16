@@ -20,6 +20,7 @@ import (
 	_ "video-manager/docs"
 	"video-manager/internal/logger"
 	object_storage "video-manager/internal/object-storage"
+	progress_broker "video-manager/internal/progress-broker"
 	video_store_service "video-manager/pkg/video-store-service"
 )
 
@@ -27,11 +28,14 @@ const (
 	Port                = 8080
 	DefaultDaprGrpcPort = 500001
 	// env
-	DAPR_GRPC_PORT    = "DAPR_GRPC_PORT"
-	OBJECT_STORE_NAME = "OBJECT_STORE_NAME"
-	GIN_MODE          = "GIN_MODE"
-	//PUBSUB_NAME           = "PUBSUB_NAME"
-	//PUBSUB_TOPIC_PROGRESS = "PUBSUB_TOPIC_PROGRESS"
+	DAPR_GRPC_PORT        = "DAPR_GRPC_PORT"
+	OBJECT_STORE_NAME     = "OBJECT_STORE_NAME"
+	GIN_MODE              = "GIN_MODE"
+	PUBSUB_NAME           = "PUBSUB_NAME"
+	PUBSUB_TOPIC_PROGRESS = "PUBSUB_TOPIC_PROGRESS"
+
+	// Topic to send progress event into
+	DefaultPubSubTopic = "upload-state"
 )
 
 var (
@@ -109,14 +113,15 @@ func main() {
 }
 
 // Resolve the pseudo DI-container
-func resolveDI(ctx *context.Context) (videos_controller.VideoController[client.Client], playlists_controller.PlaylistController[client.Client]) {
+func resolveDI(ctx *context.Context) (videos_controller.VideoController[client.Client, client.Client], playlists_controller.PlaylistController[client.Client, client.Client]) {
 	// From bottom to top:
-	// - Instanciate Dapr...
-	// TODO This should be configurable
+	// Make a new Dapr instance
 	proxy, err := makeDaprClient(2000)
 	if err != nil {
 		log.Fatalf("Error during init : %s", err.Error())
 	}
+
+	// Resolve the required object storage backend
 	storeName := ""
 	if storeName = os.Getenv(OBJECT_STORE_NAME); storeName == "" {
 		log.Fatalf("Error during init : No dapr store defined !")
@@ -125,10 +130,34 @@ func resolveDI(ctx *context.Context) (videos_controller.VideoController[client.C
 	if err != nil {
 		log.Fatalf("Error during init : %s", err.Error())
 	}
-	// With Dapr and the storage client, we can then resolve the video store service...
-	storeService, err := video_store_service.MakeVideoStoreService[client.Client](*ctx, video_store_service.Youtube, *objStore)
+
+	// Resolve the optional event broker to send upload progress
+	var progressBroker *progress_broker.ProgressBroker[client.Client]
+	pubsubName := ""
+	if pubsubName = os.Getenv(PUBSUB_NAME); pubsubName != "" {
+		topic, exists := os.LookupEnv(PUBSUB_TOPIC_PROGRESS)
+		if !exists {
+			topic = DefaultPubSubTopic
+		}
+		log.Infof(`Initializing pubsub with name "%s" and topic "%s"`, pubsubName, topic)
+		progressBroker, err = progress_broker.NewProgressBroker[client.Client](ctx, proxy, progress_broker.NewBrokerOptions{
+			Component: pubsubName,
+			Topic:     topic,
+		})
+		if err != nil {
+			log.Fatalf("Couldn't init pubsub : %s", err.Error())
+		}
+		log.Infof("Pubsub initialized")
+	} else {
+		log.Infof("No pubsub name provided. Skipping pubsub initialization")
+	}
+
+	// We can then resolve the video store service...
+	storeService, err := video_store_service.MakeVideoStoreService[client.Client](*ctx, video_store_service.Youtube, *objStore, progressBroker)
 	// With in turn give us the controllers
-	return videos_controller.VideoController[client.Client]{Service: storeService}, playlists_controller.PlaylistController[client.Client]{Service: storeService}
+	vCtrl := videos_controller.VideoController[client.Client, client.Client]{Service: storeService}
+	pCtrl := playlists_controller.PlaylistController[client.Client, client.Client]{Service: storeService}
+	return vCtrl, pCtrl
 }
 
 // Make a custom dapr client with a large max request size, to handle large uploads

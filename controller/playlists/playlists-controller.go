@@ -4,12 +4,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	object_storage "video-manager/internal/object-storage"
+	progress_broker "video-manager/internal/progress-broker"
 	video_hosting "video-manager/internal/video-hosting"
 	video_store_service "video-manager/pkg/video-store-service"
 )
 
-type PlaylistController[B object_storage.BindingProxy] struct {
-	Service *video_store_service.VideoStoreService[B]
+type PlaylistController[B object_storage.BindingProxy, P progress_broker.PubSubProxy] struct {
+	Service *video_store_service.VideoStoreService[B, P]
 }
 
 // ShowAccount godoc
@@ -23,7 +24,7 @@ type PlaylistController[B object_storage.BindingProxy] struct {
 // @Failure      400	"Required metata are wrong in some ways"
 // @Failure      500
 // @Router       /playlists [post]
-func (vc *PlaylistController[S]) Create(c *gin.Context) {
+func (vc *PlaylistController[S, P]) Create(c *gin.Context) {
 	var target video_hosting.ItemMetadata
 	if err := c.BindJSON(&target); err != nil {
 		c.String(http.StatusBadRequest, `invalid body provided: %s !`, err.Error())
@@ -53,7 +54,7 @@ func (vc *PlaylistController[S]) Create(c *gin.Context) {
 // @Failure      404  {string}  string "No playlist with this ID"
 // @Failure      500
 // @Router       /playlists/{id} [get]
-func (vc *PlaylistController[S]) Retrieve(c *gin.Context) {
+func (vc *PlaylistController[S, P]) Retrieve(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
 		c.String(http.StatusBadRequest, `No id provided !`)
@@ -85,7 +86,7 @@ func (vc *PlaylistController[S]) Retrieve(c *gin.Context) {
 // @Failure      404  {string}  string "No playlist with this ID"
 // @Failure      500
 // @Router       /playlists/{id} [put]
-func (vc *PlaylistController[S]) Update(c *gin.Context) {
+func (vc *PlaylistController[S, P]) Update(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
 		c.String(http.StatusBadRequest, `No id provided !`)
@@ -120,7 +121,7 @@ func (vc *PlaylistController[S]) Update(c *gin.Context) {
 // @Failure      404  {string}  string "No playlist with this ID"
 // @Failure      500
 // @Router       /playlists/{id} [delete]
-func (vc *PlaylistController[S]) Delete(c *gin.Context) {
+func (vc *PlaylistController[S, P]) Delete(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
 		c.String(http.StatusBadRequest, `No id provided !`)
@@ -151,7 +152,7 @@ func (vc *PlaylistController[S]) Delete(c *gin.Context) {
 // @Failure      404  {string}  string "Either the playlist or video don't exists"
 // @Failure      500
 // @Router       /playlists/{pid}/videos/{vid} [put]
-func (vc *PlaylistController[S]) AddVideo(c *gin.Context) {
+func (vc *PlaylistController[S, P]) AddVideo(c *gin.Context) {
 	pId := c.Param("pid")
 	if pId == "" {
 		c.String(http.StatusBadRequest, `No playlist id provided !`)
