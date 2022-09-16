@@ -1,5 +1,4 @@
 .PHONY: docs
-
 docs:
 # To install https://github.com/swaggo/gin-swagger
 	swag init
@@ -18,7 +17,7 @@ release: createBinDir
 	go build -ldflags "-s -w" -o bin/server
 
 test:
-	go test ./...  -covermode=atomic -coverprofile=coverage.out
+	go test $(shell go list ./... | grep -v /mock/ | grep -v /docs | grep -v /logger)  -covermode=atomic -coverprofile=coverage.out
 
 
 # https://github.com/golang/mock
