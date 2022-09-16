@@ -59,10 +59,17 @@ func (vsc *VideoStoreService[B, P]) UploadVideoFromStorage(storageKey string, me
 
 	// Upload the buffered content to the video storage
 	vid, err := vsc.VidHost.CreateVideo(meta, *reader, &onProgress)
-	// Send the error/nil to the buffered error channel
-	quit <- err
-	// And wait for the progress channel to be closed by the goroutine
-	<-pgChannel
+	// Wait for the event broker goroutine
+	if vsc.EvtBroker != nil {
+		// Send the error/nil to the buffered error channel
+		quit <- err
+		// And wait for the progress channel to be closed by the goroutine
+		<-pgChannel
+	} else {
+		close(quit)
+		close(pgChannel)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("error while uploading video : %w", err)
 	}
