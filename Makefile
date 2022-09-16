@@ -17,7 +17,7 @@ release: createBinDir
 	go build -ldflags "-s -w" -o bin/server
 
 test:
-	go test $(shell go list ./... | grep -v /mock/ | grep -v /docs | grep -v /logger)  -covermode=atomic -coverprofile=coverage.out
+	go test $(shell go list ./... | grep -v /mock/ | grep -v /docs | grep -v /logger | grep -v /youtube-host | grep -v /video-host)  -covermode=atomic -coverprofile=coverage.out
 
 
 # https://github.com/golang/mock
