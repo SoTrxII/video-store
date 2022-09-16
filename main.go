@@ -25,14 +25,17 @@ import (
 )
 
 const (
-	Port                = 8080
-	DefaultDaprGrpcPort = 500001
+	DefaultAppPort              = 8080
+	DefaultDaprGrpcPort         = 500001
+	DefaultDaprMaxRequestSizeMb = 2000
 	// env
-	DAPR_GRPC_PORT        = "DAPR_GRPC_PORT"
-	OBJECT_STORE_NAME     = "OBJECT_STORE_NAME"
-	GIN_MODE              = "GIN_MODE"
-	PUBSUB_NAME           = "PUBSUB_NAME"
-	PUBSUB_TOPIC_PROGRESS = "PUBSUB_TOPIC_PROGRESS"
+	APP_PORT                 = "APP_PORT"
+	DAPR_GRPC_PORT           = "DAPR_GRPC_PORT"
+	DAPR_MAX_REQUEST_SIZE_MB = "DAPR_MAX_REQUEST_SIZE_MB"
+	OBJECT_STORE_NAME        = "OBJECT_STORE_NAME"
+	GIN_MODE                 = "GIN_MODE"
+	PUBSUB_NAME              = "PUBSUB_NAME"
+	PUBSUB_TOPIC_PROGRESS    = "PUBSUB_TOPIC_PROGRESS"
 
 	// Topic to send progress event into
 	DefaultPubSubTopic = "upload-state"
@@ -106,7 +109,18 @@ func main() {
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
-	err = router.Run(fmt.Sprintf(":%d", Port))
+	// Attempt to parse a listening port for the app
+	appPort := DefaultAppPort
+	if port, ok := os.LookupEnv(APP_PORT); ok {
+		if appEnvPort, err := strconv.ParseUint(port, 10, 64); err != nil && appPort > 1000 {
+			appPort = int(appEnvPort)
+		} else {
+			log.Warnf("Invalid port supplied %s, defaulting to %d", port, DefaultAppPort)
+		}
+	}
+
+	log.Infof("Server listening to 0.0.0.0:%d", appPort)
+	err = router.Run(fmt.Sprintf(":%d", appPort))
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
@@ -116,7 +130,15 @@ func main() {
 func resolveDI(ctx *context.Context) (videos_controller.VideoController[client.Client, client.Client], playlists_controller.PlaylistController[client.Client, client.Client]) {
 	// From bottom to top:
 	// Make a new Dapr instance
-	proxy, err := makeDaprClient(2000)
+	daprMaxRqSize := DefaultDaprMaxRequestSizeMb
+	if sizeStr, ok := os.LookupEnv(DAPR_MAX_REQUEST_SIZE_MB); ok {
+		if size, err := strconv.ParseUint(sizeStr, 10, 64); err != nil {
+			daprMaxRqSize = int(size)
+		} else {
+			log.Warnf("Invalid dapr max request size supplied %s, defaulting to %d", sizeStr, DefaultAppPort)
+		}
+	}
+	proxy, err := makeDaprClient(daprMaxRqSize)
 	if err != nil {
 		log.Fatalf("Error during init : %s", err.Error())
 	}
