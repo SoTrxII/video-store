@@ -26,7 +26,7 @@ import (
 
 const (
 	DefaultAppPort              = 8080
-	DefaultDaprGrpcPort         = 500001
+	DefaultDaprGrpcPort         = 50001
 	DefaultDaprMaxRequestSizeMb = 2000
 	// env
 	APP_PORT                 = "APP_PORT"
