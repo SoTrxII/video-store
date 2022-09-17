@@ -7,7 +7,7 @@ spec:
   version: v1
   metadata:
     - name: bucket
-      value: recordings-test
+      value: recordings
     - name: region
       value: us-east-1
     - name: endpoint
@@ -21,6 +21,6 @@ spec:
     - name: decodeBase64
       value: true
     - name: accessKey
-      value: "SkZOwRHysPXim5lh"
+      value: "iaJSPDJkniLYYQ3U"
     - name: secretKey
-      value: "tdPjPCrygRs9gRJ7HA0D1h51XBEf2DvT"
+      value: "FxIeJjwc4EurUeyjceGcWLcg90cOGZOr"

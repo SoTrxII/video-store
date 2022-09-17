@@ -1,4 +1,4 @@
-.PHONY: docs
+.PHONY: docs dapr minio
 docs:
 # To install https://github.com/swaggo/gin-swagger
 	swag init
@@ -18,6 +18,17 @@ release: createBinDir
 
 test:
 	go test $(shell go list ./... | grep -v /mock/ | grep -v /docs | grep -v /logger | grep -v /youtube-host | grep -v /video-host)  -covermode=atomic -coverprofile=coverage.out
+
+dapr:
+	dapr run --app-id=video-store --dapr-http-port 3500 --dapr-grpc-port 50001 --components-path ./dapr/components
+
+dapr-debug:
+	dapr run --app-id=video-store --dapr-http-port 3500 --app-port 8081 --dapr-grpc-port 50001 --components-path ./dapr/components
+
+
+# S3-like storage, used in dev
+minio:
+	docker run -p 9000:9000 -p 9001:9001 minio/minio server /data --console-address ":9001"
 
 
 # https://github.com/golang/mock
