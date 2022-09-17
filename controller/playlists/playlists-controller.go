@@ -153,12 +153,12 @@ func (vc *PlaylistController[S, P]) Delete(c *gin.Context) {
 // @Failure      500
 // @Router       /playlists/{pid}/videos/{vid} [put]
 func (vc *PlaylistController[S, P]) AddVideo(c *gin.Context) {
-	pId := c.Param("pid")
+	pId := c.Param("id")
 	if pId == "" {
 		c.String(http.StatusBadRequest, `No playlist id provided !`)
 		return
 	}
-	vId := c.Param("pid")
+	vId := c.Param("vid")
 	if vId == "" {
 		c.String(http.StatusBadRequest, `No video id provided !`)
 		return

@@ -103,7 +103,7 @@ func main() {
 			playlists.GET(":id", playlistCtrl.Retrieve)
 			playlists.PUT(":id", playlistCtrl.Update)
 			playlists.DELETE(":id", playlistCtrl.Delete)
-			playlists.PUT(":id/video/:vid", playlistCtrl.AddVideo)
+			playlists.PUT(":id/videos/:vid", playlistCtrl.AddVideo)
 		}
 	}
 
