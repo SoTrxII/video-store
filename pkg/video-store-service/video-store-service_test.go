@@ -154,9 +154,9 @@ func TestVideoStoreService_ProgressRoutine_Ok(t *testing.T) {
 		Total:   1,
 	}
 	pgEvt, err := json.Marshal(progress_broker.UploadInfos{
-		RecordId:    "test",
-		UploadState: progress_broker.InProgress,
-		Data:        progressEvent,
+		RecordId: "test",
+		State:    progress_broker.InProgress,
+		Data:     progressEvent,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -168,9 +168,9 @@ func TestVideoStoreService_ProgressRoutine_Ok(t *testing.T) {
 
 	// And the second one a "Done" event, returned when the upload succeeded
 	doneEvt, err := json.Marshal(progress_broker.UploadInfos{
-		RecordId:    "test",
-		UploadState: progress_broker.Done,
-		Data:        nil,
+		RecordId: "test",
+		State:    progress_broker.Done,
+		Data:     nil,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -218,9 +218,9 @@ func TestVideoStoreService_ProgressRoutine_Error(t *testing.T) {
 		Total:   1,
 	}
 	pgEvt, err := json.Marshal(progress_broker.UploadInfos{
-		RecordId:    "test",
-		UploadState: progress_broker.InProgress,
-		Data:        progressEvent,
+		RecordId: "test",
+		State:    progress_broker.InProgress,
+		Data:     progressEvent,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -232,9 +232,9 @@ func TestVideoStoreService_ProgressRoutine_Error(t *testing.T) {
 
 	// And the second one a "Done" event, returned when the upload succeeded
 	errorEvt, err := json.Marshal(progress_broker.UploadInfos{
-		RecordId:    "test",
-		UploadState: progress_broker.Error,
-		Data:        uploadError{Message: "test"},
+		RecordId: "test",
+		State:    progress_broker.Error,
+		Data:     uploadError{Message: "test"},
 	})
 	if err != nil {
 		t.Fatal(err)

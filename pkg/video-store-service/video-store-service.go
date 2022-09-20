@@ -89,9 +89,9 @@ func (vsc *VideoStoreService[B, P]) startProgressRoutine(storageKey string, ever
 			select {
 			case pg := <-pgChannel:
 				sErr := vsc.EvtBroker.SendProgress(progress_broker.UploadInfos{
-					RecordId:    storageKey,
-					UploadState: progress_broker.InProgress,
-					Data:        pg,
+					RecordId: storageKey,
+					State:    progress_broker.InProgress,
+					Data:     pg,
 				})
 				if sErr != nil {
 					log.Errorf("Could not send event to progress broker : %s", sErr.Error())
@@ -110,9 +110,9 @@ func (vsc *VideoStoreService[B, P]) startProgressRoutine(storageKey string, ever
 				data = uploadError{Message: err.Error()}
 			}
 			sErr := vsc.EvtBroker.SendProgress(progress_broker.UploadInfos{
-				RecordId:    storageKey,
-				UploadState: state,
-				Data:        data,
+				RecordId: storageKey,
+				State:    state,
+				Data:     data,
 			})
 			if sErr != nil {
 				log.Errorf("Could not send event to progress broker : %s", sErr.Error())

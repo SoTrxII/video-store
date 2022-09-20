@@ -128,7 +128,7 @@ func Test_VideoLifecycle(t *testing.T) {
 	// And one of them should be a "done" event
 	found := false
 	for _, evt := range eventStack {
-		if evt.UploadState == progress_broker.Done {
+		if evt.State == progress_broker.Done {
 			found = true
 		}
 	}
@@ -243,7 +243,7 @@ func onBrokerEvent(ctx context.Context, e *common.TopicEvent) (retry bool, err e
 	var evt progress_broker.UploadInfos
 	/*type tmp struct {
 		RecordId string `json:"recordId"`
-		//UploadState progress_broker.UploadState `json:"uploadState"`
+		//State progress_broker.State `json:"uploadState"`
 	}*/
 	data, mErr := json.Marshal(e.Data)
 	if mErr != nil {

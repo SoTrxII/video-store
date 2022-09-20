@@ -30,8 +30,8 @@ type UploadInfos struct {
 	// Record id of the video being uploaded
 	RecordId string `json:"recordId"`
 	// Current state of the upload
-	UploadState UploadState `json:"uploadState"`
-	Data        interface{} `json:"data"`
+	State UploadState `json:"state"`
+	Data  interface{} `json:"data"`
 }
 
 type PubSubProxy interface {

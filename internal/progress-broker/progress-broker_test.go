@@ -21,8 +21,8 @@ func TestProgressBroker_SendProgress(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = pg.SendProgress(UploadInfos{
-		RecordId:    "1",
-		UploadState: InProgress,
+		RecordId: "1",
+		State:    InProgress,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -42,9 +42,9 @@ func TestProgressBroker_SendError(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = pg.SendProgress(UploadInfos{
-		RecordId:    "1",
-		UploadState: Error,
-		Data:        fmt.Errorf("Test"),
+		RecordId: "1",
+		State:    Error,
+		Data:     fmt.Errorf("Test"),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -64,9 +64,9 @@ func TestProgressBroker_SendDone(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = pg.SendProgress(UploadInfos{
-		RecordId:    "1",
-		UploadState: Done,
-		Data:        nil,
+		RecordId: "1",
+		State:    Done,
+		Data:     nil,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -86,9 +86,9 @@ func TestProgressBroker_CouldNotSend(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = pg.SendProgress(UploadInfos{
-		RecordId:    "1",
-		UploadState: Done,
-		Data:        nil,
+		RecordId: "1",
+		State:    Done,
+		Data:     nil,
 	})
 	if err == nil {
 		t.Fatal(err)
