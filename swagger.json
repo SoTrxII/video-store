@@ -511,6 +511,10 @@
                 "visibility": {
                     "description": "public/private/unlisted",
                     "type": "string"
+                },
+                "watchPrefix": {
+                    "description": "Url prefix necessary to watch the video. ie https://www.youtube.com/watch?v= for Youtube",
+                    "type": "string"
                 }
             }
         },
