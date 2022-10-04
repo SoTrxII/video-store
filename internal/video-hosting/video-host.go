@@ -24,7 +24,10 @@ type IVideoHost interface {
 	UpdateVideo(id string, replacement *Video) (*Video, error)
 	// DeleteVideo Delete an existing video from the remote video hosting platform
 	DeleteVideo(id string) error
-
+	// GetVideoAccessPrefix Returns the url prefix necessary to watch a video on the
+	// hosting platform
+	// i.e for Youtube it would be "https://www.youtube.com/watch?v="
+	GetVideoAccessPrefix() string
 	/* Playlist CRUD */
 
 	// CreatePlaylist Creates a playlist on the remote video hosting platform
@@ -62,6 +65,8 @@ type Video struct {
 	Visibility Visibility `json:"visibility" validate:"updatable"`
 	// Playlist thumbnail
 	ThumbnailUrl string `json:"thumbnailUrl,omitempty"`
+	// Url prefix necessary to watch the video. ie https://www.youtube.com/watch?v= for Youtube
+	WatchPrefix string `json:"watchPrefix"`
 }
 
 // Playlist A collection of videos hosted on a video storage

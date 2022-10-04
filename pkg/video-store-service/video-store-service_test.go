@@ -170,7 +170,11 @@ func TestVideoStoreService_ProgressRoutine_Ok(t *testing.T) {
 	doneEvt, err := json.Marshal(progress_broker.UploadInfos{
 		RecordId: "test",
 		State:    progress_broker.Done,
-		Data:     nil,
+		Data: uploadDone{
+			Id:          "test",
+			WatchPrefix: "",
+			Duration:    0,
+		},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -182,14 +186,25 @@ func TestVideoStoreService_ProgressRoutine_Ok(t *testing.T) {
 
 	// Make the channels and start the routine
 	pgChannel := make(chan uploadProgress)
-	errorCh := make(chan error)
-	go deps.service.startProgressRoutine("test", time.Second, pgChannel, errorCh)
+	resCh := make(chan uploadResult)
+	go deps.service.startProgressRoutine("test", time.Second, pgChannel, resCh)
 
 	// Send the two progress events first
 	pgChannel <- progressEvent
 	pgChannel <- progressEvent
 	// And signal the subprocess to end with no error
-	errorCh <- nil
+	resCh <- uploadResult{
+		Result: &video_hosting.Video{
+			Id:           "test",
+			Title:        "test",
+			Description:  "test",
+			CreatedAt:    time.Time{},
+			Duration:     0,
+			Visibility:   "unlisted",
+			ThumbnailUrl: "test",
+		},
+		Error: nil,
+	}
 
 	// In the meantime, make the main process wait for 10s max
 	// after which the test will fail. This prevents infinite loops
@@ -244,17 +259,24 @@ func TestVideoStoreService_ProgressRoutine_Error(t *testing.T) {
 		PublishEvent(gomock.Any(), gomock.Any(), gomock.Any(), string(errorEvt), gomock.Any()).
 		Times(1)
 
+	// This should never be called for an error
+	deps.videoStore.
+		EXPECT().
+		GetVideoAccessPrefix().
+		Times(0)
 	// Make the channels and start the routine
 	pgChannel := make(chan uploadProgress)
-	errorCh := make(chan error)
-	go deps.service.startProgressRoutine("test", time.Second, pgChannel, errorCh)
+	resCh := make(chan uploadResult)
+	go deps.service.startProgressRoutine("test", time.Second, pgChannel, resCh)
 
 	// Send the two progress events first
 	pgChannel <- progressEvent
 	pgChannel <- progressEvent
-	// And signal the subprocess to end with no error
-	errorCh <- fmt.Errorf("test")
-
+	// And signal the subprocess to end with an error
+	resCh <- uploadResult{
+		Result: nil,
+		Error:  fmt.Errorf("test"),
+	}
 	// In the meantime, make the main process wait for 10s max
 	// after which the test will fail. This prevents infinite loops
 	ticker := time.NewTimer(time.Second * 10)

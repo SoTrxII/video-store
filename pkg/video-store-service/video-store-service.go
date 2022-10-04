@@ -27,6 +27,22 @@ type uploadProgress struct {
 	Total int64 `json:"total"`
 }
 
+// Fired while uploading a video
+type uploadDone struct {
+	// Video Id
+	Id string `json:"id"`
+	// URL prefix to watch videos on the url
+	WatchPrefix string `json:"watchPrefix"`
+	// Video duration
+	Duration int64 `json:"duration"`
+}
+
+// Fired while uploading a video
+type uploadResult struct {
+	Result *video_hosting.Video
+	Error  error
+}
+
 // UploadVideoFromStorage Upload a video identified on the object storage by "storageKey" to the video hosting platform
 func (vsc *VideoStoreService[B, P]) UploadVideoFromStorage(storageKey string, meta *video_hosting.ItemMetadata) (*video_hosting.Video, error) {
 
@@ -41,7 +57,7 @@ func (vsc *VideoStoreService[B, P]) UploadVideoFromStorage(storageKey string, me
 
 	// Progress routine, post upload progress on the event broker if it has defined
 	var onProgress video_hosting.ProgressFunc
-	quit := make(chan error, 1)
+	quit := make(chan uploadResult, 1)
 	pgChannel := make(chan uploadProgress)
 	if vsc.EvtBroker != nil {
 		onProgress = func(current int64, total int64) {
@@ -59,10 +75,14 @@ func (vsc *VideoStoreService[B, P]) UploadVideoFromStorage(storageKey string, me
 
 	// Upload the buffered content to the video storage
 	vid, err := vsc.VidHost.CreateVideo(meta, *reader, &onProgress)
+
 	// Wait for the event broker goroutine
 	if vsc.EvtBroker != nil {
 		// Send the error/nil to the buffered error channel
-		quit <- err
+		quit <- uploadResult{
+			Result: vid,
+			Error:  err,
+		}
 		// And wait for the progress channel to be closed by the goroutine
 		<-pgChannel
 	} else {
@@ -79,7 +99,7 @@ func (vsc *VideoStoreService[B, P]) UploadVideoFromStorage(storageKey string, me
 
 // Periodically send progress to the event broker
 // If an error is passed in errorCh, send Error, if nil is passed, send Done instead
-func (vsc *VideoStoreService[B, P]) startProgressRoutine(storageKey string, every time.Duration, pgChannel chan uploadProgress, errorCh chan error) {
+func (vsc *VideoStoreService[B, P]) startProgressRoutine(storageKey string, every time.Duration, pgChannel chan uploadProgress, resCh chan uploadResult) {
 	ticker := time.NewTicker(every)
 	for {
 		select {
@@ -100,14 +120,20 @@ func (vsc *VideoStoreService[B, P]) startProgressRoutine(storageKey string, ever
 				// No progress to post
 			}
 		// Else, at each iteration, check if the upload finished in any way
-		case err := <-errorCh:
+		case res := <-resCh:
 			ticker.Stop()
 			// If an error is detected, send error, else send done
 			state := progress_broker.Done
 			var data interface{}
-			if err != nil {
+			if res.Error != nil {
 				state = progress_broker.Error
-				data = uploadError{Message: err.Error()}
+				data = uploadError{Message: res.Error.Error()}
+			} else {
+				data = uploadDone{
+					Id:          res.Result.Id,
+					WatchPrefix: res.Result.WatchPrefix,
+					Duration:    res.Result.Duration,
+				}
 			}
 			sErr := vsc.EvtBroker.SendProgress(progress_broker.UploadInfos{
 				RecordId: storageKey,

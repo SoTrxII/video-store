@@ -69,6 +69,10 @@ func (ytP YoutubeVideoStore) DeleteVideo(id string) error {
 	return call.Do()
 }
 
+func (ytP YoutubeVideoStore) GetVideoAccessPrefix() string {
+	return getYoutubePrefix()
+}
+
 func (ytP YoutubeVideoStore) CreatePlaylist(meta *ItemMetadata) (*Playlist, error) {
 	call := ytP.Service.Playlists.Insert([]string{"snippet", "status", "contentDetails"}, &youtube.Playlist{
 		Snippet: &youtube.PlaylistSnippet{
@@ -185,6 +189,11 @@ func (ytP YoutubeVideoStore) getYoutubePlaylistById(id string) (*youtube.Playlis
 	return res.Items[0], nil
 }
 
+// Return the prefix in which we can plug an ID to watch a video
+func getYoutubePrefix() string {
+	return "https://www.youtube.com/watch?v="
+}
+
 // Converts a Youtube-specific video in a generic video
 // /!\ The youtube video input must contain the parts "contentDetails", "id", "snippet" and "status"
 func toGenericVideo(in *youtube.Video) (*Video, error) {
@@ -211,6 +220,7 @@ func toGenericVideo(in *youtube.Video) (*Video, error) {
 		Duration:     *d,
 		Visibility:   Visibility(in.Status.PrivacyStatus),
 		ThumbnailUrl: thumbUrl,
+		WatchPrefix:  getYoutubePrefix(),
 	}, nil
 }
 
