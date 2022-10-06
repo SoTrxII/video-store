@@ -521,6 +521,7 @@
         "videos_controller.CreateVideoBody": {
             "type": "object",
             "required": [
+                "jobId",
                 "storageKey",
                 "title",
                 "visibility"
@@ -530,6 +531,10 @@
                     "description": "Short text describing the content of the item\nYoutube actually limits to 5000 bytes, which *isn't* 5000 characters\nhttps://developers.google.com/youtube/v3/docs/videos#properties",
                     "type": "string",
                     "maxLength": 1000
+                },
+                "jobId": {
+                    "description": "UUID of this uploading job, necessary to tell the jobs apart\nwhen multiple are running concurrently",
+                    "type": "string"
                 },
                 "storageKey": {
                     "description": "Key to retrieve the video from the object storage",
