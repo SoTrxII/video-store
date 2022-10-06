@@ -242,7 +242,7 @@ func onBrokerEvent(ctx context.Context, e *common.TopicEvent) (retry bool, err e
 	// Parse the progress event
 	var evt progress_broker.UploadInfos
 	/*type tmp struct {
-		RecordId string `json:"recordId"`
+		JobId string `json:"recordId"`
 		//State progress_broker.State `json:"uploadState"`
 	}*/
 	data, mErr := json.Marshal(e.Data)

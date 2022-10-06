@@ -20,6 +20,9 @@ type CreateVideoBody struct {
 	video_hosting.ItemMetadata
 	// Key to retrieve the video from the object storage
 	StorageKey string `json:"storageKey" binding:"required"`
+	// UUID of this uploading job, necessary to tell the jobs apart
+	// when multiple are running concurrently
+	JobId string `json:"jobId" binding:"required"`
 }
 
 // ShowAccount godoc
@@ -44,7 +47,7 @@ func (vc *VideoController[S, P]) Create(c *gin.Context) {
 		c.String(http.StatusBadRequest, `No storage key provided, aborting !`)
 		return
 	}
-	vid, err := vc.Service.UploadVideoFromStorage(target.StorageKey, &video_hosting.ItemMetadata{
+	vid, err := vc.Service.UploadVideoFromStorage(target.JobId, target.StorageKey, &video_hosting.ItemMetadata{
 		Description: target.Description,
 		Title:       target.Title,
 		Visibility:  target.Visibility,

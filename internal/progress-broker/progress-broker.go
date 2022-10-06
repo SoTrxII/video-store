@@ -27,8 +27,8 @@ const (
 )
 
 type UploadInfos struct {
-	// Record id of the video being uploaded
-	RecordId string `json:"recordId"`
+	// Upload job identifier
+	JobId string `json:"jobId"`
 	// Current state of the upload
 	State UploadState `json:"state"`
 	Data  interface{} `json:"data"`

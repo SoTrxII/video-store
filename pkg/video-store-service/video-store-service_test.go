@@ -72,7 +72,7 @@ func TestVideoStoreService_UploadFromObjectStore_DownloadError(t *testing.T) {
 	// Setup the proxy to fail to simulate a download error
 	deps.objectStoreProxy.EXPECT().InvokeBinding(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("test"))
 
-	_, err := deps.service.UploadVideoFromStorage("test", &video_hosting.ItemMetadata{
+	_, err := deps.service.UploadVideoFromStorage("jobId", "test", &video_hosting.ItemMetadata{
 		Description: "desc",
 		Title:       "title",
 		Visibility:  "unlisted",
@@ -85,7 +85,7 @@ func TestVideoStoreService_UploadFromObjectStore_CreateVideoError(t *testing.T) 
 	// Setup the proxy to fail to simulate a download error
 	deps.objectStoreProxy.EXPECT().InvokeBinding(gomock.Any(), gomock.Any()).Return(&client.BindingEvent{Data: []byte("a")}, nil)
 	deps.videoStore.EXPECT().CreateVideo(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("test"))
-	_, err := deps.service.UploadVideoFromStorage("test", &video_hosting.ItemMetadata{
+	_, err := deps.service.UploadVideoFromStorage("jobId", "test", &video_hosting.ItemMetadata{
 		Description: "desc",
 		Title:       "title",
 		Visibility:  "unlisted",
@@ -106,7 +106,7 @@ func TestVideoStoreService_UploadFromObjectStore_Ok(t *testing.T) {
 		Visibility:   "unlisted",
 		ThumbnailUrl: "",
 	}, nil)
-	_, err := deps.service.UploadVideoFromStorage("test", &video_hosting.ItemMetadata{
+	_, err := deps.service.UploadVideoFromStorage("jobId", "test", &video_hosting.ItemMetadata{
 		Description: "desc",
 		Title:       "title",
 		Visibility:  "unlisted",
@@ -116,7 +116,7 @@ func TestVideoStoreService_UploadFromObjectStore_Ok(t *testing.T) {
 
 func TestVideoStoreService_UploadFromObjectStore_InvalidMetadata(t *testing.T) {
 	deps := Setup(t, false)
-	_, err := deps.service.UploadVideoFromStorage("test", nil)
+	_, err := deps.service.UploadVideoFromStorage("jobId", "test", nil)
 	assert.NotNil(t, err)
 }
 
@@ -135,7 +135,7 @@ func TestVideoStoreService_UploadFromObjectStore_WithProgress(t *testing.T) {
 		Visibility:   "unlisted",
 		ThumbnailUrl: "",
 	}, nil)
-	_, err := deps.service.UploadVideoFromStorage("test", &video_hosting.ItemMetadata{
+	_, err := deps.service.UploadVideoFromStorage("jobId", "test", &video_hosting.ItemMetadata{
 		Description: "desc",
 		Title:       "title",
 		Visibility:  "unlisted",
@@ -154,9 +154,9 @@ func TestVideoStoreService_ProgressRoutine_Ok(t *testing.T) {
 		Total:   1,
 	}
 	pgEvt, err := json.Marshal(progress_broker.UploadInfos{
-		RecordId: "test",
-		State:    progress_broker.InProgress,
-		Data:     progressEvent,
+		JobId: "test",
+		State: progress_broker.InProgress,
+		Data:  progressEvent,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -168,8 +168,8 @@ func TestVideoStoreService_ProgressRoutine_Ok(t *testing.T) {
 
 	// And the second one a "Done" event, returned when the upload succeeded
 	doneEvt, err := json.Marshal(progress_broker.UploadInfos{
-		RecordId: "test",
-		State:    progress_broker.Done,
+		JobId: "test",
+		State: progress_broker.Done,
 		Data: uploadDone{
 			Id:          "test",
 			WatchPrefix: "",
@@ -233,9 +233,9 @@ func TestVideoStoreService_ProgressRoutine_Error(t *testing.T) {
 		Total:   1,
 	}
 	pgEvt, err := json.Marshal(progress_broker.UploadInfos{
-		RecordId: "test",
-		State:    progress_broker.InProgress,
-		Data:     progressEvent,
+		JobId: "test",
+		State: progress_broker.InProgress,
+		Data:  progressEvent,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -247,9 +247,9 @@ func TestVideoStoreService_ProgressRoutine_Error(t *testing.T) {
 
 	// And the second one a "Done" event, returned when the upload succeeded
 	errorEvt, err := json.Marshal(progress_broker.UploadInfos{
-		RecordId: "test",
-		State:    progress_broker.Error,
-		Data:     uploadError{Message: "test"},
+		JobId: "test",
+		State: progress_broker.Error,
+		Data:  uploadError{Message: "test"},
 	})
 	if err != nil {
 		t.Fatal(err)

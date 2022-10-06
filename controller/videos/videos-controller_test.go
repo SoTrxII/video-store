@@ -295,7 +295,7 @@ func Test_VideoController_Retrieve_Ok(t *testing.T) {
 	assert.Equal(t, sampleVid, updatedVid)
 }
 
-func Test_VideoController_Create_Error_Key(t *testing.T) {
+func jobId(t *testing.T) {
 	deps := Setup(t, false)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -376,6 +376,7 @@ func Test_VideoController_Create_Ok(t *testing.T) {
 			Visibility:  "test",
 		},
 		StorageKey: "test",
+		JobId:      "test",
 	}
 	setJsonAsBody(t, c, body)
 	// Testing with an empty body
@@ -409,6 +410,7 @@ func Test_VideoController_Create_Ok_WithProgress(t *testing.T) {
 			Visibility:  "test",
 		},
 		StorageKey: "test",
+		JobId:      "test",
 	}
 	setJsonAsBody(t, c, body)
 	// Testing with an empty body

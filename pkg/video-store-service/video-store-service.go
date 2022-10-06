@@ -44,7 +44,7 @@ type uploadResult struct {
 }
 
 // UploadVideoFromStorage Upload a video identified on the object storage by "storageKey" to the video hosting platform
-func (vsc *VideoStoreService[B, P]) UploadVideoFromStorage(storageKey string, meta *video_hosting.ItemMetadata) (*video_hosting.Video, error) {
+func (vsc *VideoStoreService[B, P]) UploadVideoFromStorage(jobId string, storageKey string, meta *video_hosting.ItemMetadata) (*video_hosting.Video, error) {
 
 	if meta == nil {
 		return nil, fmt.Errorf("no video metadata provided, aborting")
@@ -70,7 +70,7 @@ func (vsc *VideoStoreService[B, P]) UploadVideoFromStorage(storageKey string, me
 				// pgChannel is full
 			}
 		}
-		go vsc.startProgressRoutine(storageKey, time.Second, pgChannel, quit)
+		go vsc.startProgressRoutine(jobId, time.Second, pgChannel, quit)
 	}
 
 	// Upload the buffered content to the video storage
@@ -99,7 +99,7 @@ func (vsc *VideoStoreService[B, P]) UploadVideoFromStorage(storageKey string, me
 
 // Periodically send progress to the event broker
 // If an error is passed in errorCh, send Error, if nil is passed, send Done instead
-func (vsc *VideoStoreService[B, P]) startProgressRoutine(storageKey string, every time.Duration, pgChannel chan uploadProgress, resCh chan uploadResult) {
+func (vsc *VideoStoreService[B, P]) startProgressRoutine(jobId string, every time.Duration, pgChannel chan uploadProgress, resCh chan uploadResult) {
 	ticker := time.NewTicker(every)
 	for {
 		select {
@@ -109,9 +109,9 @@ func (vsc *VideoStoreService[B, P]) startProgressRoutine(storageKey string, ever
 			select {
 			case pg := <-pgChannel:
 				sErr := vsc.EvtBroker.SendProgress(progress_broker.UploadInfos{
-					RecordId: storageKey,
-					State:    progress_broker.InProgress,
-					Data:     pg,
+					JobId: jobId,
+					State: progress_broker.InProgress,
+					Data:  pg,
 				})
 				if sErr != nil {
 					log.Errorf("Could not send event to progress broker : %s", sErr.Error())
@@ -136,9 +136,9 @@ func (vsc *VideoStoreService[B, P]) startProgressRoutine(storageKey string, ever
 				}
 			}
 			sErr := vsc.EvtBroker.SendProgress(progress_broker.UploadInfos{
-				RecordId: storageKey,
-				State:    state,
-				Data:     data,
+				JobId: jobId,
+				State: state,
+				Data:  data,
 			})
 			if sErr != nil {
 				log.Errorf("Could not send event to progress broker : %s", sErr.Error())
