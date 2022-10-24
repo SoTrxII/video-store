@@ -79,6 +79,32 @@ func TestVideoStoreService_UploadFromObjectStore_DownloadError(t *testing.T) {
 	})
 	assert.NotNil(t, err)
 }
+func TestVideoStoreService_UploadFromObjectStore_DownloadErrorRetry(t *testing.T) {
+	deps := Setup(t, false)
+	// Setup the service to try 4 times
+	deps.service.opt.objStoreMaxRetry = 3
+	// Setup the proxy to only succeed at the third attempt
+	deps.objectStoreProxy.EXPECT().InvokeBinding(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("test"))
+	deps.objectStoreProxy.EXPECT().InvokeBinding(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("test"))
+	deps.objectStoreProxy.EXPECT().InvokeBinding(gomock.Any(), gomock.Any()).Return(&client.BindingEvent{Data: []byte("a")}, nil)
+	// Setup the video store to "upload" a video
+	deps.videoStore.EXPECT().CreateVideo(gomock.Any(), gomock.Any(), gomock.Any()).Return(&video_hosting.Video{
+		Id:           "test",
+		Title:        "test",
+		Description:  "test",
+		CreatedAt:    time.Time{},
+		Duration:     0,
+		Visibility:   "unlisted",
+		ThumbnailUrl: "",
+	}, nil)
+
+	_, err := deps.service.UploadVideoFromStorage("jobId", "test", &video_hosting.ItemMetadata{
+		Description: "desc",
+		Title:       "title",
+		Visibility:  "unlisted",
+	})
+	assert.Nil(t, err)
+}
 
 func TestVideoStoreService_UploadFromObjectStore_CreateVideoError(t *testing.T) {
 	deps := Setup(t, false)

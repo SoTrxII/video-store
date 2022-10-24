@@ -24,7 +24,7 @@ func MakeVideoStoreService[T object_storage.BindingProxy, P progress_broker.PubS
 	case Youtube:
 		store, err = makeYoutubeStoreService(ctx)
 	default:
-		// This can't actually haj
+		// This can't actually happen
 		err = fmt.Errorf(`the provided host "%v" has no available implementation`, host)
 	}
 	if err != nil {
@@ -35,6 +35,7 @@ func MakeVideoStoreService[T object_storage.BindingProxy, P progress_broker.PubS
 		EvtBroker: progressBroker,
 		ObjStore:  &proxy,
 		VidHost:   store,
+		opt:       VideoStoreOptions{objStoreMaxRetry: 10},
 	}, nil
 
 }

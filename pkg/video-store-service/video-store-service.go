@@ -2,6 +2,8 @@ package video_store_service
 
 import (
 	"fmt"
+	"io"
+	"math"
 	"time"
 	"video-manager/internal/logger"
 	object_storage "video-manager/internal/object-storage"
@@ -43,6 +45,12 @@ type uploadResult struct {
 	Error  error
 }
 
+type VideoStoreOptions struct {
+	// Number of time to retry calls made to the object store.
+	// Each call will be followed by a wait time of (2^attempt)s
+	objStoreMaxRetry int8
+}
+
 // UploadVideoFromStorage Upload a video identified on the object storage by "storageKey" to the video hosting platform
 func (vsc *VideoStoreService[B, P]) UploadVideoFromStorage(jobId string, storageKey string, meta *video_hosting.ItemMetadata) (*video_hosting.Video, error) {
 
@@ -50,7 +58,25 @@ func (vsc *VideoStoreService[B, P]) UploadVideoFromStorage(jobId string, storage
 		return nil, fmt.Errorf("no video metadata provided, aborting")
 	}
 	// Get the content of the file to upload and buffer it into memory
-	reader, err := vsc.ObjStore.Buffer(storageKey)
+	// So there may be a race condition here.
+	// As far as I understand, object uploaded on a storage aren't available immediately after upload, there is a slight
+	// delay that might be caused by the configured B64 decoding. Still, as the file gets bigger, this delay gets longer.
+	// So we actually can't trust the Buffer to work the first time around.
+	var reader *io.Reader
+	var err error
+	// Using "<=", we make sure the loop in entered at least once, event if max retry is 0
+	for attempts := int8(0); attempts <= vsc.opt.objStoreMaxRetry; attempts++ {
+		reader, err = vsc.ObjStore.Buffer(storageKey)
+		if err == nil {
+			break
+		}
+		log.Warnf("error in attempt %d at dowloading the video from the object storage %s", attempts, err.Error())
+		// We will use a linear backoff strategy, we don't have any collision whatsoever, we just want to wait until the video is available
+		// The sum 2^n from 0 to 10 = 2047 ~= 30min  of total wait, this is way more than enough, as more will be over an
+		// http session time. Plus, if the waiting time is really because of the b64 decoding, it's a 0(n) time complexity algorithm
+		delaySecs := int64(math.Pow(2, float64(attempts)))
+		time.Sleep(time.Duration(delaySecs) * time.Second)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("error while downloading video from object storage : %w", err)
 	}
@@ -156,4 +182,7 @@ type VideoStoreService[B object_storage.BindingProxy, P progress_broker.PubSubPr
 	EvtBroker *progress_broker.ProgressBroker[P]
 	// Video hosting platform
 	VidHost video_hosting.IVideoHost
+	// Customize behaviour of the service
+	// Not using a pointer will initialize a struct will default values
+	opt VideoStoreOptions
 }
