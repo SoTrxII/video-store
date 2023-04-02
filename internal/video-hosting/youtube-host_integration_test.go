@@ -81,7 +81,7 @@ func Test_YoutubeStore_VideoLifecycle(t *testing.T) {
 		Visibility:  Unlisted,
 	}, f, nil)
 	assert.Nil(t, err)
-
+	assert.Equal(t, v.Duration, int64(10))
 	// Propagation time
 	time.Sleep(10 * time.Second)
 	// Change its title and check that the changes propagated

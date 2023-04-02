@@ -36,7 +36,14 @@ func (ytP YoutubeVideoStore) CreateVideo(meta *ItemMetadata, uploadContent io.Re
 	if err != nil {
 		return nil, handleGoogleApiError(err)
 	}
-	return toGenericVideo(ytVid)
+
+	// We are forced to make a separate API call to get all the files details.
+	ytVid2, err := ytP.getYoutubeVideoById(ytVid.Id)
+	if err != nil {
+		return nil, handleGoogleApiError(err)
+	}
+
+	return toGenericVideo(ytVid2)
 }
 
 func (ytP YoutubeVideoStore) RetrieveVideo(id string) (*Video, error) {
@@ -162,7 +169,7 @@ func (ytP YoutubeVideoStore) AddVideoToPlaylist(videoId string, playlistId strin
 // Retrieve a youtube video with the provided ID
 // Errors if not found
 func (ytP YoutubeVideoStore) getYoutubeVideoById(id string) (*youtube.Video, error) {
-	call := ytP.Service.Videos.List([]string{"contentDetails", "id", "snippet", "status"})
+	call := ytP.Service.Videos.List([]string{"contentDetails", "id", "snippet", "status", "fileDetails"})
 	call.Id(id)
 	res, err := call.Do()
 	if err != nil {
@@ -195,10 +202,10 @@ func getYoutubePrefix() string {
 }
 
 // Converts a Youtube-specific video in a generic video
-// /!\ The youtube video input must contain the parts "contentDetails", "id", "snippet" and "status"
+// /!\ The youtube video input must contain the parts "fileDetails", "id", "snippet" and "status"
 func toGenericVideo(in *youtube.Video) (*Video, error) {
-	if in.Snippet == nil || in.Status == nil || in.ContentDetails == nil {
-		return nil, fmt.Errorf(`Missing some required parts (snippet, contentDetails or status`)
+	if in.Snippet == nil || in.Status == nil {
+		return nil, fmt.Errorf(`Missing some required parts (snippet or status`)
 	}
 	creationDate, err := time.Parse(time.RFC3339, in.Snippet.PublishedAt)
 	if err != nil {
@@ -208,16 +215,19 @@ func toGenericVideo(in *youtube.Video) (*Video, error) {
 	if in.Snippet.Thumbnails != nil && in.Snippet.Thumbnails.Default != nil {
 		thumbUrl = in.Snippet.Thumbnails.Default.Url
 	}
-	d, err := iSO8601DurationToSeconds(in.ContentDetails.Duration)
-	if err != nil {
-		return nil, err
+
+	// Duration has to be parsed for the fileDetails instead of contentdetails
+	// as the contentDetails duration field is set after the video has been processed
+	duration := int64(0)
+	if in.FileDetails != nil {
+		duration = int64(in.FileDetails.DurationMs / 1000)
 	}
 	return &Video{
 		Id:           in.Id,
 		Title:        in.Snippet.Title,
 		Description:  in.Snippet.Description,
 		CreatedAt:    creationDate,
-		Duration:     *d,
+		Duration:     duration,
 		Visibility:   Visibility(in.Status.PrivacyStatus),
 		ThumbnailUrl: thumbUrl,
 		WatchPrefix:  getYoutubePrefix(),
