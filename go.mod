@@ -1,6 +1,6 @@
 module video-manager
 
-go 1.19
+go 1.20
 
 require (
 	github.com/dapr/dapr v1.8.0
