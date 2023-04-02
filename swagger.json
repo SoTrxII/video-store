@@ -446,7 +446,11 @@
                 },
                 "visibility": {
                     "description": "Visibility of the item",
-                    "type": "string"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/video_hosting.Visibility"
+                        }
+                    ]
                 }
             }
         },
@@ -478,7 +482,11 @@
                 },
                 "visibility": {
                     "description": "public/private/unlisted",
-                    "type": "string"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/video_hosting.Visibility"
+                        }
+                    ]
                 }
             }
         },
@@ -510,13 +518,30 @@
                 },
                 "visibility": {
                     "description": "public/private/unlisted",
-                    "type": "string"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/video_hosting.Visibility"
+                        }
+                    ]
                 },
                 "watchPrefix": {
                     "description": "Url prefix necessary to watch the video. ie https://www.youtube.com/watch?v= for Youtube",
                     "type": "string"
                 }
             }
+        },
+        "video_hosting.Visibility": {
+            "type": "string",
+            "enum": [
+                "public",
+                "private",
+                "unlisted"
+            ],
+            "x-enum-varnames": [
+                "Public",
+                "Private",
+                "Unlisted"
+            ]
         },
         "videos_controller.CreateVideoBody": {
             "type": "object",
@@ -547,7 +572,11 @@
                 },
                 "visibility": {
                     "description": "Visibility of the item",
-                    "type": "string"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/video_hosting.Visibility"
+                        }
+                    ]
                 }
             }
         }
