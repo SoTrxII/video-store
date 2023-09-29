@@ -109,14 +109,9 @@ func main() {
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
-	// Attempt to parse a listening port for the app
 	appPort := DefaultAppPort
-	if port, ok := os.LookupEnv(APP_PORT); ok {
-		if appEnvPort, err := strconv.ParseUint(port, 10, 64); err != nil && appPort > 1000 {
-			appPort = int(appEnvPort)
-		} else {
-			log.Warnf("Invalid port supplied %s, defaulting to %d", port, DefaultAppPort)
-		}
+	if envPort, err := strconv.ParseInt(os.Getenv("APP_PORT"), 10, 32); err == nil && envPort != 0 {
+		appPort = int(envPort)
 	}
 
 	log.Infof("Server listening to 0.0.0.0:%d", appPort)
