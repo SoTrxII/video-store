@@ -67,6 +67,38 @@ func Setup(t *testing.T, initBroker bool) *mocked {
 	}
 }
 
+func TestVideoStoreService_SetVideoThumbnailFromStorage_DownloadError(t *testing.T) {
+	deps := Setup(t, false)
+	// Setup the proxy to fail to simulate a download error
+	deps.objectStoreProxy.EXPECT().InvokeBinding(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("test"))
+
+	err := deps.service.SetVideoThumbnailFromStorage("test", "test")
+	assert.NotNil(t, err)
+}
+
+func TestVideoStoreService_SetVideoThumbnailFromStorage_UpdateThumbnailError(t *testing.T) {
+
+	deps := Setup(t, false)
+	// Setup the proxy to succeed
+	deps.objectStoreProxy.EXPECT().InvokeBinding(gomock.Any(), gomock.Any()).Return(&client.BindingEvent{Data: []byte("a")}, nil)
+	// Setup the video host to fail
+	deps.videoStore.EXPECT().UpdateVideoThumbnail(gomock.Any(), gomock.Any()).Return(fmt.Errorf("test"))
+
+	err := deps.service.SetVideoThumbnailFromStorage("test", "test")
+	assert.NotNil(t, err)
+}
+
+func TestVideoStoreService_SetVideoThumbnailFromStorage_Ok(t *testing.T) {
+	deps := Setup(t, false)
+	// Setup the proxy to succeed
+	deps.objectStoreProxy.EXPECT().InvokeBinding(gomock.Any(), gomock.Any()).Return(&client.BindingEvent{Data: []byte("a")}, nil)
+	// Setup the video host to succeed
+	deps.videoStore.EXPECT().UpdateVideoThumbnail(gomock.Any(), gomock.Any()).Return(nil)
+
+	err := deps.service.SetVideoThumbnailFromStorage("test", "test")
+	assert.Nil(t, err)
+}
+
 func TestVideoStoreService_UploadFromObjectStore_DownloadError(t *testing.T) {
 	deps := Setup(t, false)
 	// Setup the proxy to fail to simulate a download error

@@ -418,6 +418,71 @@ func Test_VideoController_Create_Ok_WithProgress(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 }
 
+func TestVideoController_SetThumbnail_FromStorageKey_Ok(t *testing.T) {
+	deps := Setup(t, true)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	deps.
+		objectStoreProxy.
+		EXPECT().
+		InvokeBinding(gomock.Any(), gomock.Any()).Return(&client.BindingEvent{Data: []byte("aa")}, nil)
+
+	deps.videoStore.EXPECT().UpdateVideoThumbnail(gomock.Any(), gomock.Any()).Return(nil)
+
+	c.Params = []gin.Param{gin.Param{Key: "id", Value: "1"}, {Key: "tId", Value: "meh"}}
+	deps.controller.SetThumbnail(c)
+	assert.Equal(t, http.StatusNoContent, w.Code)
+}
+
+func TestVideoController_SetThumbnail_FromStorageKey_ThumbNotExists(t *testing.T) {
+	deps := Setup(t, true)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	deps.
+		objectStoreProxy.
+		EXPECT().
+		InvokeBinding(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("test"))
+
+	c.Params = []gin.Param{gin.Param{Key: "id", Value: "1"}, {Key: "tId", Value: "meh"}}
+	deps.controller.SetThumbnail(c)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestVideoController_SetThumbnail_FromStorageKey_YoutubeError(t *testing.T) {
+	deps := Setup(t, true)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	deps.
+		objectStoreProxy.
+		EXPECT().
+		InvokeBinding(gomock.Any(), gomock.Any()).Return(&client.BindingEvent{Data: []byte("aa")}, nil)
+
+	deps.videoStore.EXPECT().UpdateVideoThumbnail(gomock.Any(), gomock.Any()).Return(fmt.Errorf("test"))
+	c.Params = []gin.Param{gin.Param{Key: "id", Value: "1"}, {Key: "tId", Value: "meh"}}
+	deps.controller.SetThumbnail(c)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestVideoController_SetThumbnail_MissingId(t *testing.T) {
+	deps := Setup(t, true)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	deps.controller.SetThumbnail(c)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestVideoController_SetThumbnail_FromBuffer_Ok(t *testing.T) {
+	deps := Setup(t, true)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBuffer([]byte("test")))
+	deps.videoStore.EXPECT().UpdateVideoThumbnail(gomock.Any(), gomock.Any()).Return(nil)
+	c.Params = []gin.Param{gin.Param{Key: "id", Value: "1"}, {Key: "tId", Value: ""}}
+	deps.controller.SetThumbnail(c)
+	assert.Equal(t, http.StatusNoContent, w.Code)
+}
+
 // Set the payload as the JSON body of c
 func setJsonAsBody(t *testing.T, c *gin.Context, payload any) {
 	buf, err := json.Marshal(payload)

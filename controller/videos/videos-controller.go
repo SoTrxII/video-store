@@ -169,22 +169,32 @@ func (vc *VideoController[S, P]) Delete(c *gin.Context) {
 // @Param        key   path      int  true  "Video ID"
 // @Success      204
 // @Failure      500
-// @Router       /videos/{id}/thumbnail [post]
+// @Router       /videos/{id}/thumbnail/{tId} [post]
 func (vc *VideoController[S, P]) SetThumbnail(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
 		c.String(http.StatusBadRequest, `No id provided !`)
 		return
 	}
-	err := vc.Service.VidHost.UpdateVideoThumbnail(id, c.Request.Body)
+	// A thumbnail can be supplied two ways
+	// Either with the thumbnail key from the backend storage
+	// Or with the thumbnail data in the request body
+	tTd := c.Param("tId")
+	var err error
+	if tTd != "" {
+		err = vc.Service.SetVideoThumbnailFromStorage(c.Param("id"), c.Param("tId"))
+	} else {
+		err = vc.Service.VidHost.UpdateVideoThumbnail(id, c.Request.Body)
+	}
+
 	if err != nil {
 		if re, ok := err.(*video_hosting.RequestError); ok {
 			c.String(re.StatusCode, re.Error())
 		} else {
-			c.Status(http.StatusInternalServerError)
-			_ = c.Error(err)
+			c.String(http.StatusInternalServerError, err.Error())
 		}
 		return
 	}
+
 	c.String(http.StatusNoContent, "")
 }

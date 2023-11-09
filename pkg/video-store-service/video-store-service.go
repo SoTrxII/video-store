@@ -175,6 +175,15 @@ func (vsc *VideoStoreService[B, P]) startProgressRoutine(jobId string, every tim
 	}
 }
 
+func (vsc *VideoStoreService[B, P]) SetVideoThumbnailFromStorage(vidId, thumbStorageKey string) error {
+	reader, err := vsc.ObjStore.Buffer(thumbStorageKey)
+	if err != nil {
+		return fmt.Errorf("error while downloading thumbnail from object storage : %w", err)
+	}
+
+	return vsc.VidHost.UpdateVideoThumbnail(vidId, *reader)
+}
+
 type VideoStoreService[B object_storage.BindingProxy, P progress_broker.PubSubProxy] struct {
 	// Backend object storage
 	ObjStore *object_storage.ObjectStorage[B]
