@@ -396,7 +396,7 @@
                 }
             }
         },
-        "/videos/{id}/thumbnail": {
+        "/videos/{id}/thumbnail/{tId}": {
             "post": {
                 "description": "Set the thumbnail of an existing video on the remote video hosting platform",
                 "consumes": [
