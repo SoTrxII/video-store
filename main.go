@@ -95,7 +95,7 @@ func main() {
 			videos.GET(":id", vidCtrl.Retrieve)
 			videos.PUT(":id", vidCtrl.Update)
 			videos.DELETE(":id", vidCtrl.Delete)
-			videos.POST(":id/thumbnail", vidCtrl.SetThumbnail)
+			videos.POST(":id/thumbnail/:tId", vidCtrl.SetThumbnail)
 		}
 		playlists := v1.Group("/playlists")
 		{
