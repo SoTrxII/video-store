@@ -132,7 +132,7 @@ func TestPatchPlaylist(t *testing.T) {
 
 func TestToGenericVideo(t *testing.T) {
 	const (
-		duration     = "PT2H"
+		duration     = 7200000
 		id           = "testId"
 		desc         = "testdesc"
 		creationDate = "2018-08-25T11:12:35Z"
@@ -142,8 +142,8 @@ func TestToGenericVideo(t *testing.T) {
 	)
 	// No thumbnail
 	ytVid := youtube.Video{
-		ContentDetails: &youtube.VideoContentDetails{
-			Duration: duration,
+		FileDetails: &youtube.VideoFileDetails{
+			DurationMs: duration,
 		},
 		Id: id,
 		Snippet: &youtube.VideoSnippet{
