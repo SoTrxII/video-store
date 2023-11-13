@@ -487,6 +487,10 @@
                             "$ref": "#/definitions/video_hosting.Visibility"
                         }
                     ]
+                },
+                "watchPrefix": {
+                    "description": "Url prefix necessary to watch the playlist. ie https://www.youtube.com/playlist?list= for Youtube",
+                    "type": "string"
                 }
             }
         },
