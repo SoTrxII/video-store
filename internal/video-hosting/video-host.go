@@ -85,6 +85,8 @@ type Playlist struct {
 	Visibility Visibility `json:"visibility" validate:"updatable"`
 	// Playlist thumbnail
 	ThumbnailUrl string `json:"thumbnailUrl,omitempty"`
+	// Url prefix necessary to watch the playlist. ie https://www.youtube.com/playlist?list= for Youtube
+	WatchPrefix string `json:"watchPrefix"`
 }
 
 // Represent the visibility of an object on the video storage

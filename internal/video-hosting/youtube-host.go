@@ -77,7 +77,7 @@ func (ytP YoutubeVideoStore) DeleteVideo(id string) error {
 }
 
 func (ytP YoutubeVideoStore) GetVideoAccessPrefix() string {
-	return getYoutubePrefix()
+	return getYoutubeVideoPrefix()
 }
 
 func (ytP YoutubeVideoStore) CreatePlaylist(meta *ItemMetadata) (*Playlist, error) {
@@ -197,8 +197,11 @@ func (ytP YoutubeVideoStore) getYoutubePlaylistById(id string) (*youtube.Playlis
 }
 
 // Return the prefix in which we can plug an ID to watch a video
-func getYoutubePrefix() string {
+func getYoutubeVideoPrefix() string {
 	return "https://www.youtube.com/watch?v="
+}
+func getYoutubePlaylistPrefix() string {
+	return "https://www.youtube.com/playlist?list="
 }
 
 // Converts a Youtube-specific video in a generic video
@@ -230,7 +233,7 @@ func toGenericVideo(in *youtube.Video) (*Video, error) {
 		Duration:     duration,
 		Visibility:   Visibility(in.Status.PrivacyStatus),
 		ThumbnailUrl: thumbUrl,
-		WatchPrefix:  getYoutubePrefix(),
+		WatchPrefix:  getYoutubeVideoPrefix(),
 	}, nil
 }
 
@@ -272,6 +275,7 @@ func toGenericPlaylist(in *youtube.Playlist) (*Playlist, error) {
 		CreatedAt:    creationDate,
 		Visibility:   Visibility(in.Status.PrivacyStatus),
 		ThumbnailUrl: thumbUrl,
+		WatchPrefix:  getYoutubePlaylistPrefix(),
 	}, nil
 }
 
