@@ -319,6 +319,10 @@ func patchYoutubeVideo(src *youtube.Video, patch *Video) error {
 	src.Snippet.Title = patch.Title
 	src.Snippet.Description = patch.Description
 	src.Status.PrivacyStatus = string(patch.Visibility)
+	// Fetched for the duration, but not a part videos.update takes: sent back,
+	// YouTube refuses the whole update with "400 'file_details', unexpectedPart"
+	// (first call of this route, 2026-11-12).
+	src.FileDetails = nil
 
 	return nil
 }

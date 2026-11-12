@@ -204,3 +204,18 @@ func TestAssignDefault(t *testing.T) {
 	assignDefault(&opt)
 	assert.Equal(t, "24", opt.CategoryId)
 }
+
+func TestPatchVideoDropsFileDetails(t *testing.T) {
+	const creationDate = "2026-11-03T17:49:32Z"
+	ytVid := youtube.Video{
+		Id:          "testId",
+		Snippet:     &youtube.VideoSnippet{Title: "t", PublishedAt: creationDate},
+		Status:      &youtube.VideoStatus{PrivacyStatus: "unlisted"},
+		FileDetails: &youtube.VideoFileDetails{DurationMs: 9132000},
+	}
+	parsed, _ := time.Parse(time.RFC3339, creationDate)
+	err := patchYoutubeVideo(&ytVid, &Video{Id: "testId", Title: "t", Description: "Chapitres :", CreatedAt: parsed, Visibility: Unlisted})
+	assert.Nil(t, err)
+	assert.Equal(t, "Chapitres :", ytVid.Snippet.Description)
+	assert.Nil(t, ytVid.FileDetails)
+}
